@@ -158,11 +158,11 @@ class LauncherController:
             return True
     
     def loadDefaultSettings(self):
-        self.view.numTrainingVar.set("0")
+        self.view.numTrainingVar.set("1500")
         self.view.numGamesVar.set("1")
         self.view.numGhostsVar.set("2")
         self.view.layoutVar.set("mediumClassic")
-        self.view.pacmanVar.set("KeyboardAgent")
+        self.view.pacmanVar.set("ReinforcementQAgent")
         self.view.fixRandomSeedVar.set("False")
         
         self.view.zoomVar.set("1.0")
