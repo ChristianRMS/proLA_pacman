@@ -1,4 +1,7 @@
 # Application name
+
+# TEST WITH SSH 14.04.2016
+
 WINDOW_TITLE = "Pacman Launcher"
 
 # Window layout
