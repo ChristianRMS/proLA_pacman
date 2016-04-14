@@ -20,6 +20,8 @@ lib64/
 parts/
 sdist/
 var/
+.idea/*
+idea/
 /idea/workspace.xml
 .idea/workspace.xml
 *.egg-info/
