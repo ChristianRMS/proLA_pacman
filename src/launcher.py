@@ -125,24 +125,7 @@ class LauncherView(Tkinter.Tk):
                         values.append(match.group(1).strip())
                     
         return values
-
-    def getGhostValues(self):
-        values = []
-        files = glob.glob("*Agents.py")
-        for filename in files:
-            if not ("ghost" in filename.lower()):
-                continue
-
-            with open(filename) as file:
-                content = file.readlines()
-                for line in content:
-                    if (("class" in line) and ("agent" in line.lower()) and not ("ghostagent" in line.lower())):
-                        match = re.search('class (.*?)\(', line)
-                        values.append(match.group(1).strip())
-                        print ("ghost Agent found: " + str(match.group(1).strip()))
-
-        return values
-
+    
     # Initialize the window
     def initialize(self):
         self.nextRow = 0
@@ -170,10 +153,6 @@ class LauncherView(Tkinter.Tk):
         
         self.createLabel("Pacman-Agent", self.nextRow)
         self.pacmanVar = self.createDropDown(self.nextRow, self.getPacmanValues())
-        self.finishRow()
-
-        self.createLabel("Ghost-Agent", self.nextRow)
-        self.pacmanVar = self.createDropDown(self.nextRow, self.getGhostValues())
         self.finishRow()
         
         self.createLabel("Feste Random-Seed", self.nextRow)
