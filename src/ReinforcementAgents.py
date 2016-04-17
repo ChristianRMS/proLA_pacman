@@ -4,6 +4,7 @@ import random
 import game
 from bfsSearch import ReinforcementSearch
 from game import Directions
+from neuralController import NeuralController
 from pybrain.datasets.supervised import SupervisedDataSet
 
 
@@ -167,6 +168,7 @@ class myDict(dict):
             self[key] = float(self[key]) / value
 
 class RuleGenerator():
+
     def directionToCoordinate(self, direction):
         if direction == Directions.NORTH:
             return (0,1)
@@ -354,12 +356,10 @@ class RuleGenerator():
         features.normalize()
         #features.divideAll(maxDistance)
         logging.debug(str(features))
-        return features
+        return features   
 
-class NeuralAgent(game.Agent):
-        
+class ReinforcementRAgent(game.Agent):
     def __init__(self, numTraining = 0):
-        self.network = KNNAgents()
         self.actionPower = myDict(0.0)
         self.ruleGenerator = RuleGenerator()
         self.random = random.Random()
@@ -377,33 +377,30 @@ class NeuralAgent(game.Agent):
         except ValueError:
             pass
 
-    def getCombinedValue(self, state, direction):
+    def getCombinedValue(self,state, direction):
         combinedValue = 0.0
         features = self.ruleGenerator.getfeatures(state, direction)
-        shortestPillDistance = features['foodValuability']
-        shortestGhostDistance = features['ghostThreat']
-        return self.network.calculateAction(shortestPillDistance, shortestGhostDistance)
+        logging.debug("Features " + str(direction) + " " + str(features))
+        for featureKey in features.keys():
+            combinedValue += features[featureKey] * self.actionPower[featureKey]
+        return combinedValue
 
     def updater(self,nextState):
+        logging.debug("Start Updating")
         reward = self.calcReward(nextState)
         features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
-        #maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        ds = SupervisedDataSet(2,1)
-        shortestPillDistance = features['foodValuability']
-        shortestGhostDistance = features['ghostThreat']
-        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward))
-        self.network.getTrainer().trainOnDataset(ds)
-        #for ruleKey in features.keys():
-        #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
-        #    logging.debug("Difference: " + str(difference))
-        #    self.actionPower[ruleKey] = self.actionPower[ruleKey] + self.alpha * difference * features[ruleKey]
+        maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
+        for ruleKey in features.keys():
+            difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
+            logging.debug("Difference: " + str(difference))
+            self.actionPower[ruleKey] = self.actionPower[ruleKey] + self.alpha * difference * features[ruleKey]
             #zur demo orginal QLearning
             #different = (reward + self.gamma * maxPossibleFutureValue - currentValue)
             #calcVal =  currentValue + self.alpha * different
-        #logging.debug("ActionPower: " + str(self.actionPower))
+        logging.debug("ActionPower: " + str(self.actionPower))
         #self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
-        #logging.debug("Stop Updating")
+        logging.debug("Stop Updating")
 
     def calcReward(self, state):
         return state.getScore() - self.lastState.getScore()
@@ -489,9 +486,11 @@ class NeuralAgent(game.Agent):
 
     def isInTesting(self):
         return not self.isInTraining()
-    
-class ReinforcementRAgent(game.Agent):
+
+class NeuralAgent(game.Agent):
+        
     def __init__(self, numTraining = 0):
+        self.network = NeuralController()
         self.actionPower = myDict(0.0)
         self.ruleGenerator = RuleGenerator()
         self.random = random.Random()
@@ -509,30 +508,34 @@ class ReinforcementRAgent(game.Agent):
         except ValueError:
             pass
 
-    def getCombinedValue(self,state, direction):
+    def getCombinedValue(self, state, direction):
         combinedValue = 0.0
         features = self.ruleGenerator.getfeatures(state, direction)
-        logging.debug("Features " + str(direction) + " " + str(features))
-        for featureKey in features.keys():
-            combinedValue += features[featureKey] * self.actionPower[featureKey]
-        return combinedValue
+        shortestPillDistance = features['foodValuability']
+        shortestGhostDistance = features['ghostThreat']
+        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
+        return action
 
     def updater(self,nextState):
-        logging.debug("Start Updating")
         reward = self.calcReward(nextState)
         features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
-        maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        for ruleKey in features.keys():
-            difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
-            logging.debug("Difference: " + str(difference))
-            self.actionPower[ruleKey] = self.actionPower[ruleKey] + self.alpha * difference * features[ruleKey]
+        #maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
+        ds = SupervisedDataSet(2,1)
+        shortestPillDistance = features['foodValuability']
+        shortestGhostDistance = features['ghostThreat']
+        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward))
+        self.network.getTrainer().trainOnDataset(ds)
+        #for ruleKey in features.keys():
+        #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
+        #    logging.debug("Difference: " + str(difference))
+        #    self.actionPower[ruleKey] = self.actionPower[ruleKey] + self.alpha * difference * features[ruleKey]
             #zur demo orginal QLearning
             #different = (reward + self.gamma * maxPossibleFutureValue - currentValue)
             #calcVal =  currentValue + self.alpha * different
-        logging.debug("ActionPower: " + str(self.actionPower))
+        #logging.debug("ActionPower: " + str(self.actionPower))
         #self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
-        logging.debug("Stop Updating")
+        #logging.debug("Stop Updating")
 
     def calcReward(self, state):
         return state.getScore() - self.lastState.getScore()
