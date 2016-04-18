@@ -1,0 +1,35 @@
+Training abgeschlossen
+Input to Hidden Connections:
+[-2.86171696 -0.27371751 -2.82321062  0.31737828 -1.86197973  0.97401936
+ -2.5498341   0.74817092  0.13895588 -0.71927941]
+Training abgeschlossen
+Hidden to Output Connections:
+[ 0.84177851  0.66577977 -0.92703187  0.17907717 -2.58423387]
+Training abgeschlossen
+Input to Hidden Connections:
+[-2.86341555 -1.83779703 -2.8248598  -1.08933994 -1.86214792  0.33390532
+ -2.55102254 -0.39962293  0.14052446 -0.12133231]
+Training abgeschlossen
+Hidden to Output Connections:
+[-1.07991445 -1.54968427 -2.96443508 -2.08337875 -2.93647486]
+Training abgeschlossen
+Input to Hidden Connections:
+[-2.69327815 -1.94166874 -2.55421679 -1.35421544 -0.89501632 -0.28512911
+ -2.10223867 -0.85751816  1.89481841 -0.3046412 ]
+Training abgeschlossen
+Hidden to Output Connections:
+[-1.18504043 -1.56393178 -3.00851532 -2.0372931  -4.31082313]
+Training abgeschlossen
+Input to Hidden Connections:
+[-2.75540312 -2.53763876 -2.63338465 -2.35619697 -0.69269596 -2.85001891
+ -2.15441013 -2.43674071  3.1902318  -3.22725493]
+Training abgeschlossen
+Hidden to Output Connections:
+[-0.24070258 -0.29071338 -1.92326463 -0.6661689  -5.29935095]
+Training abgeschlossen
+Input to Hidden Connections:
+[-2.86803291 -2.41014413 -2.79339931 -2.18406423 -1.29291132 -3.33219796
+ -2.29909047 -2.59562794  3.88047525 -3.51772045]
+Training abgeschlossen
+Hidden to Output Connections:
+[ 0.47861693  0.55510967 -1.13849049  0.05082135 -4.51375694]

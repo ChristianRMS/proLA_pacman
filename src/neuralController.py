@@ -1,12 +1,32 @@
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised.trainers.trainer import Trainer
 from pybrain.supervised.trainers.backprop import BackpropTrainer
+from pybrain.structure.networks.feedforward import FeedForwardNetwork
+from pybrain.structure.modules.linearlayer import LinearLayer
+from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
+from pybrain.structure.connections.full import FullConnection
 class NeuralController:
-   
-      
+       
     #--Konstruktor--
     def __init__(self):
-        self.net = buildNetwork(2,50,1);
+        self.net = FeedForwardNetwork()
+        
+        self.inLayer = LinearLayer(2)
+        self.hiddenLayer = SigmoidLayer(25)
+        self.outLayer = LinearLayer(1)
+        
+        self.net.addInputModule(self.inLayer)
+        self.net.addModule(self.hiddenLayer)
+        self.net.addOutputModule(self.outLayer)
+        
+        self.in_to_hidden = FullConnection(self.inLayer, self.hiddenLayer)
+        self.hidden_to_out = FullConnection(self.hiddenLayer, self.outLayer)
+        
+        self.net.addConnection(self.in_to_hidden)
+        self.net.addConnection(self.hidden_to_out)
+        
+        self.net.sortModules()
+        
         self.trainer = BackpropTrainer(self.net)
         self.data = []
     
@@ -35,6 +55,13 @@ class NeuralController:
     def calculateAction(self, ghostDistance, pillDistance):
         result = self.net.activate([ghostDistance, pillDistance])
         return result[0]
+    
+    def printNetwork(self):
+        print "Training abgeschlossen"
+        print "Input to Hidden Connections:"
+        print self.in_to_hidden.params
+        print "Hidden to Output Connections:"
+        print self.hidden_to_out.params
     
     def getTrainer(self):
         return self.trainer

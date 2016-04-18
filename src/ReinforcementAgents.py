@@ -297,7 +297,7 @@ class RuleGenerator():
                 #for (sucX, sucY) in self.getMovableDirections(curX, curY,walls):
                 #    openList.append((sucX, sucY, dist + 1))
                 #maxDistance = max(maxDistance, dist)
-        #searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
+        searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
         #searchResult['maximumDistance'] = self.getMaximumDistance(state)
@@ -350,10 +350,9 @@ class RuleGenerator():
 #            features['powerPelletValuability'] = (float(stateSearch['nearestPowerPelletDist'])) #/ maxDistance
 #        else:
 #            features['powerPelletValuability'] = 0.0
-        # if stateSearch['nearestEatableGhostDistances'] is not None:
-        #     features['eatableGhosts'] = (float(stateSearch['nearestEatableGhostDistances'])) #/ maxDistance
-        #features['maxDistance'] = maxDistance
-        features.normalize()
+        if stateSearch['nearestEatableGhostDistances'] is not None:
+            features['eatableGhosts'] = (float(stateSearch['nearestEatableGhostDistances'])) #/ maxDistance
+        features['maxDistance'] = maxDistance
         #features.divideAll(maxDistance)
         logging.debug(str(features))
         return features   
@@ -501,6 +500,7 @@ class NeuralAgent(game.Agent):
         self.epsilon = 0.1
         self.numTraining = int(numTraining)
         self.episodesSoFar = 0
+        self.step = 0
 
     def safeListRemove(self,lst,item):
         try:
@@ -509,10 +509,15 @@ class NeuralAgent(game.Agent):
             pass
 
     def getCombinedValue(self, state, direction):
-        combinedValue = 0.0
         features = self.ruleGenerator.getfeatures(state, direction)
         shortestPillDistance = features['foodValuability']
         shortestGhostDistance = features['ghostThreat']
+        print shortestGhostDistance
+        print shortestPillDistance
+        #shortestEatableGhost = features['eatableGhosts']
+        """print "StepVA" + str(self.step)
+        print "spd: " + str(shortestPillDistance)
+        print "sgd: " + str(shortestGhostDistance)"""
         action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
         return action
 
@@ -520,22 +525,27 @@ class NeuralAgent(game.Agent):
         reward = self.calcReward(nextState)
         features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
-        #maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
+        maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
         ds = SupervisedDataSet(2,1)
         shortestPillDistance = features['foodValuability']
         shortestGhostDistance = features['ghostThreat']
-        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward))
+        #shortestEatableGhost = features['eatableGhosts']
+        """print "StepUP" + str(self.step)
+        print "spd: " + str(shortestPillDistance)
+        print "sgd: " + str(shortestGhostDistance)"""
+        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         #for ruleKey in features.keys():
         #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
         #    logging.debug("Difference: " + str(difference))
         #    self.actionPower[ruleKey] = self.actionPower[ruleKey] + self.alpha * difference * features[ruleKey]
-            #zur demo orginal QLearning
-            #different = (reward + self.gamma * maxPossibleFutureValue - currentValue)
-            #calcVal =  currentValue + self.alpha * different
+        #    #zur demo orginal QLearning
+        #    different = (reward + self.gamma * maxPossibleFutureValue - currentValue)
+        #    calcVal =  currentValue + self.alpha * different
         #logging.debug("ActionPower: " + str(self.actionPower))
         #self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
         #logging.debug("Stop Updating")
+        #self.step = self.step + 1
 
     def calcReward(self, state):
         return state.getScore() - self.lastState.getScore()
@@ -607,6 +617,7 @@ class NeuralAgent(game.Agent):
         self.lastAction = None
         #raw_input("Press Any Key ")
         if self.isInTraining():
+            self.network.printNetwork()
             self.episodesSoFar += 1
             logging.info("Training " + str(self.episodesSoFar) + " of " + str (self.numTraining))
         else:
