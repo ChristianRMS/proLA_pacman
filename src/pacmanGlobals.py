@@ -3,3 +3,4 @@ class PacmanGlobals:
     layout = None
     numGhostAgents = None
     debugModeBool = None
+    singleSteps = None

@@ -281,7 +281,7 @@ class ClassicGameRules:
     def __init__(self, timeout=30):
         self.timeout = timeout
 
-    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False):
+    def newGame( self, layout, pacmanAgent, ghostAgents, display, quiet = False, catchExceptions=False, singleStepMode=False):
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize( layout, len(ghostAgents) )
@@ -289,6 +289,7 @@ class ClassicGameRules:
         game.state = initState
         self.initialState = initState.deepCopy()
         self.quiet = quiet
+        self.singleStepMode = singleStepMode
         return game
 
     def process(self, state, game):
@@ -635,9 +636,15 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 ):
+def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 , singleStep=False):
     # import __main__
     # __main__.__dict__['_display'] = display
+
+    singleStepModus = PacmanGlobals.singleSteps
+
+
+
+    # print str(singleStepModus)
 
     rules = ClassicGameRules(timeout)
     games = []
@@ -652,8 +659,8 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         else:
             gameDisplay = display
             rules.quiet = False
-        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions)
-        game.run()
+        game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, singleStepModus)
+        game.run(singleStepModus, beQuiet)
         if not beQuiet: games.append(game)
 
         if record:
@@ -679,6 +686,8 @@ def startByLauncher(arguments):
     args = readCommand(arguments) # Get game components based on input
     # decides if debug output is displayed or not
     debug = PacmanGlobals.debugModeBool
+    singleStep = PacmanGlobals.singleSteps
+
     if debug:
         debug_log = logging.DEBUG
     else:

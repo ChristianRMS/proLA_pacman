@@ -45,7 +45,14 @@ class LauncherController:
     def startApplication(self):
         if (not self.validateData('Fehlerhafte Einstellungen!', 'Einige Einstellungswerte sind ungueltig: ')):
             return
-        
+
+        singleStepModus = DatatypeUtils.stringToBoolean(self.view.singleStep.get())
+        if singleStepModus:
+            print "singe step modus active"
+            PacmanGlobals.singleSteps = singleStepModus
+        else:
+            PacmanGlobals.singleSteps = singleStepModus
+
         numGhostsValue = DatatypeUtils.stringToInteger(self.view.numGhostsVar.get())
         PacmanGlobals.numGhostAgents = numGhostsValue
 

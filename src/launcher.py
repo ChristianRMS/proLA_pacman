@@ -194,7 +194,7 @@ class LauncherView(Tkinter.Tk):
         self.createLabel("Ausgabe als Text", self.nextRow)
         self.textGraphicsVar = self.createCheckBox(self.nextRow)
         self.finishRow()
-        
+
         self.createLabel("Minimale Ausgabe", self.nextRow)
         self.quietTextGraphicsVar = self.createCheckBox(self.nextRow)
         self.finishRow()
@@ -202,7 +202,11 @@ class LauncherView(Tkinter.Tk):
         self.createLabel("DEBUG modus", self.nextRow)
         self.displayDebugVar = self.createCheckBox(self.nextRow)
         self.finishRow()
-        
+
+        self.createLabel('Q-Wert Ausgabe + Singlestep', self.nextRow)
+        self.singleStep = self.createCheckBox(self.nextRow)
+        self.finishRow()
+
         # Button to apply default settings
         defaultSettingsButton = Tkinter.Button(self,
             text=u"Standard-Einstellungen laden",
