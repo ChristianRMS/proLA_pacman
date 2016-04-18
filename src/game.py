@@ -567,10 +567,11 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def run( self ):
+    def run( self , single=False , beQuiet=False ):
         """
         Main control loop for game play.
         """
+
         self.display.initialize(self.state.data)
         self.numMoves = 0
 
@@ -645,6 +646,12 @@ class Game:
             # Solicit an action
             action = None
             self.mute(agentIndex)
+            #print "agent:  " + str(self.agents[0])
+
+            if not beQuiet:
+                if single:
+                    raw_input("Press enter to continue")
+
             if self.catchExceptions:
                 try:
                     timed_func = TimeoutFunction(agent.getAction, int(self.rules.getMoveTimeout(agentIndex)) - int(move_time))

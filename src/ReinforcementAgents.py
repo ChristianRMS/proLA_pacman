@@ -1,6 +1,8 @@
 import logging
 import random
 
+import sys
+
 import game
 from bfsSearch import ReinforcementSearch
 from game import Directions
@@ -78,7 +80,7 @@ class ReinforcementQAgent(game.Agent):
     def getAction(self, state):
         logging.debug(str(state))
         self.lastAction = self.chooseAction(state)
-
+        #print "qAgent called."
         return self.lastAction
 
     def chooseAction(self, state):
@@ -86,8 +88,10 @@ class ReinforcementQAgent(game.Agent):
         rnd = self.random.random()
         if self.epsilon > rnd:
             logging.debug("random " + str(rnd) + " gamma " + str(self.epsilon))
+            #print "chooseAction: random"
             return self.random.choice(directions)
         else:
+            #print "chooseAction: " + self.saving.getBestDirection(self.lastState, directions)
             return self.saving.getBestDirection(self.lastState, directions)
 
     def calcReward(self, state):
@@ -113,6 +117,7 @@ class ReinforcementQAgent(game.Agent):
         maxPossibleFutureValue = self.saving.getBestValue(state, self.legaldirections(state))
         calcVal =  currentValue + self.alpha * (reward + self.gamma * maxPossibleFutureValue - currentValue)
         self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
+        self.printQ(state, currentValue, maxPossibleFutureValue, calcVal, self.lastAction)
 
     def observationFunction(self, state):
         if self.lastState:
@@ -136,6 +141,13 @@ class ReinforcementQAgent(game.Agent):
 
     def isInTesting(self):
         return not self.isInTraining()
+
+    def printQ(self, state, currentValue, maxPossibleFutureValue, calcVal, lastAction):
+        print "\nlast State Score " + str(self.lastState.getScore())
+        print "new Score :" + str(state.getScore())
+        print "last Action : " + str(lastAction)
+        print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
+        print "calcValue : " + str(calcVal)
 
 class myDict(dict):
     def __init__(self, default):
