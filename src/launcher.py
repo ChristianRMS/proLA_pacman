@@ -4,10 +4,10 @@ WINDOW_TITLE = "Pacman Launcher"
 # Window layout
 WINDOW_ALIGN_TO_LEFT_FACTOR = 2
 WINDOW_ALIGN_TO_TOP_FACTOR = 2
-WINDOW_BORDER = 20
-WINDOW_SPACING = 5
+WINDOW_BORDER = 30
+WINDOW_SPACING = 10
 WINDOW_TEXTBOX_WIDTH = 30
-WINDOW_LABEL_WIDTH = 20
+WINDOW_LABEL_WIDTH = 30
 
 import Tkinter
 import tkFont
@@ -203,7 +203,7 @@ class LauncherView(Tkinter.Tk):
         self.displayDebugVar = self.createCheckBox(self.nextRow)
         self.finishRow()
 
-        self.createLabel('Q-Wert Ausgabe + Singlestep', self.nextRow)
+        self.createLabel("QWert Ausgabe + Singlestep", self.nextRow)
         self.singleStep = self.createCheckBox(self.nextRow)
         self.finishRow()
 
