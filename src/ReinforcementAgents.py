@@ -357,7 +357,7 @@ class RuleGenerator():
         #features.divideAll(maxDistance)
         logging.debug(str(features))
         return features   
-
+"""
 class ReinforcementRAgent(game.Agent):
     def __init__(self, numTraining = 0):
         self.actionPower = myDict(0.0)
@@ -486,7 +486,7 @@ class ReinforcementRAgent(game.Agent):
 
     def isInTesting(self):
         return not self.isInTraining()
-
+"""
 class NeuralAgent(game.Agent):
         
     def __init__(self, numTraining = 0):
