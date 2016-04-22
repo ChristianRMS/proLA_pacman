@@ -53,6 +53,7 @@ class LauncherController:
         else:
             PacmanGlobals.singleSteps = singleStepModus
 
+        PacmanGlobals.logFileName = str(self.view.logFileName.get())
         PacmanGlobals.logIt = DatatypeUtils.stringToBoolean(self.view.logIt.get())
 
         numGhostsValue = DatatypeUtils.stringToInteger(self.view.numGhostsVar.get())
@@ -199,6 +200,7 @@ class LauncherController:
             self.view.textGraphicsVar.set(Config.get('DisplaySettings', 'textGraphics'))
             self.view.quietTextGraphicsVar.set(Config.get('DisplaySettings', 'quietTextGraphics'))
             self.view.displayDebugVar.set(Config.get('DisplaySettings', 'displayDebugMode'))
+            self.view.logFileName.set(Config.get('DisplaySettings', 'logFileName'))
 
             self.validateData('Fehlerhafte Einstellungen!', 'Einige Einstellungswerte sind ungueltig: ')
         except Exception, e:
@@ -231,6 +233,7 @@ class LauncherController:
         Config.set('DisplaySettings', 'textGraphics', self.view.textGraphicsVar.get())
         Config.set('DisplaySettings', 'quietTextGraphics', self.view.quietTextGraphicsVar.get())
         Config.set('DisplaySettings', 'displayDebugMode', self.view.displayDebugVar.get())
+        Config.set('DisplaySettings', 'logFileName', self.view.logFileName.get())
         Config.write(cfgfile)
         
         cfgfile.close()

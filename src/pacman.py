@@ -645,7 +645,11 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
 
     # create logfile
     if PacmanGlobals.logIt:
-        fileName = raw_input("Enter your input: ");
+        if not PacmanGlobals.logFileName:
+            print "haha noob, enter filename for logfile next time!"
+            fileName = raw_input("Enter your input: ");
+        else:
+            fileName = PacmanGlobals.logFileName
         logz = open(fileName+".txt", "wb")
 
 
