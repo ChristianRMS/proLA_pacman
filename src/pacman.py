@@ -616,7 +616,7 @@ def loadAgent(pacman, nographics):
                 if nographics and modulename == 'keyboardAgents.py':
                     raise Exception('Using the keyboard requires graphics (not text display)')
                 return getattr(module, pacman)
-    raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
+    #raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
 
 def replayGame( layout, actions, display ):
     import pacmanAgents, ghostAgents
@@ -643,14 +643,14 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
     singleStepModus = PacmanGlobals.singleSteps
     print " log it? " + str(PacmanGlobals.logIt)
 
-    # create logfile
-    if PacmanGlobals.logIt:
-        if not PacmanGlobals.logFileName:
-            print "haha noob, enter filename for logfile next time!"
-            fileName = raw_input("Enter your input: ");
-        else:
-            fileName = PacmanGlobals.logFileName
-        logz = open(fileName+".txt", "wb")
+    # # create logfile
+    # if PacmanGlobals.logIt:
+    #     if not PacmanGlobals.logFileName:
+    #         print "haha noob, enter filename for logfile next time!"
+    #         fileName = raw_input("Enter your input: ");
+    #     else:
+    #         fileName = PacmanGlobals.logFileName
+    #     logz = open(fileName+".txt", "wb")
 
 
     # print str(singleStepModus)
@@ -689,12 +689,12 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
         print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
 
-        if PacmanGlobals.logIt:
-            wRate = '%d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
-            logz.write('Average Score:'+ str(sum(scores) / float(len(scores))))
-            #logz.write('Scores:       ' + ', '.join([str(score) for score in scores]))
-            logz.write(str('\nWin rate ' + wRate))
-            #logz.write('Record:       ' + ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+        # if PacmanGlobals.logIt:
+        #     wRate = '%d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
+        #     logz.write('Average Score:'+ str(sum(scores) / float(len(scores))))
+        #     #logz.write('Scores:       ' + ', '.join([str(score) for score in scores]))
+        #     logz.write(str('\nWin rate ' + wRate))
+        #     #logz.write('Record:       ' + ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
 
     return games
 

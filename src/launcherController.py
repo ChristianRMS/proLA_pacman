@@ -233,7 +233,7 @@ class LauncherController:
         Config.set('DisplaySettings', 'textGraphics', self.view.textGraphicsVar.get())
         Config.set('DisplaySettings', 'quietTextGraphics', self.view.quietTextGraphicsVar.get())
         Config.set('DisplaySettings', 'displayDebugMode', self.view.displayDebugVar.get())
-        Config.set('DisplaySettings', 'logFileName', self.view.logFileName.get())
+        #Config.set('DisplaySettings', 'logFileName', self.view.logFileName.get())
         Config.write(cfgfile)
         
         cfgfile.close()
