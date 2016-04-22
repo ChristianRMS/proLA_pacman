@@ -689,12 +689,12 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
         print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
 
-        wRate = '%d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
-
-        logz.write('Average Score:'+ str(sum(scores) / float(len(scores))))
-        #logz.write('Scores:       ' + ', '.join([str(score) for score in scores]))
-        logz.write(str('\nWin rate ' + wRate))
-        #logz.write('Record:       ' + ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+        if PacmanGlobals.logIt:
+            wRate = '%d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
+            logz.write('Average Score:'+ str(sum(scores) / float(len(scores))))
+            #logz.write('Scores:       ' + ', '.join([str(score) for score in scores]))
+            logz.write(str('\nWin rate ' + wRate))
+            #logz.write('Record:       ' + ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
 
     return games
 

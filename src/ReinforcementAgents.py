@@ -149,6 +149,91 @@ class ReinforcementQAgent(game.Agent):
         print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
         print "calcValue : " + str(calcVal)
 
+class ReinforcementQEAgent(game.Agent):
+    def __init__(self, numTraining = 0):
+         self.saving = Saving()
+         self.random = random.Random()
+         self.lastState = None
+         self.lastAction = None
+         self.alpha = 0.1
+         self.gamma = 0.5
+         self.epsilon = 0.2
+         self.numTraining = int(numTraining)
+         self.episodesSoFar = 0
+
+    def getAction(self, state):
+        logging.debug(str(state))
+        self.lastAction = self.chooseAction(state)
+        #print "qAgent called."
+        return self.lastAction
+
+    def chooseAction(self, state):
+        directions = self.legaldirections(state)
+        rnd = self.random.random()
+        if self.epsilon > rnd:
+            logging.debug("random " + str(rnd) + " gamma " + str(self.epsilon))
+            #print "chooseAction: random"
+            return self.random.choice(directions)
+        else:
+            #print "chooseAction: " + self.saving.getBestDirection(self.lastState, directions)
+            return self.saving.getBestDirection(self.lastState, directions)
+
+    def calcReward(self, state):
+        return state.getScore() - self.lastState.getScore()
+
+    def legaldirections(self, state):
+        directions = state.getLegalPacmanActions()
+        self.safeListRemove(directions, Directions.LEFT)
+        self.safeListRemove(directions, Directions.REVERSE)
+        self.safeListRemove(directions, Directions.RIGHT)
+        #self.safeListRemove(directions, Directions.STOP)
+        return directions
+
+    def safeListRemove(self,lst,item):
+        try:
+            lst.remove(item)
+        except ValueError:
+            pass
+
+    def updater(self, state):
+        reward = self.calcReward(state)
+        currentValue = self.saving.getRatingForNextState(self.lastAction, self.lastState)
+        maxPossibleFutureValue = self.saving.getBestValue(state, self.legaldirections(state))
+        calcVal =  currentValue + self.alpha * (reward + self.gamma * maxPossibleFutureValue - currentValue)
+        self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
+        self.printQ(state, currentValue, maxPossibleFutureValue, calcVal, self.lastAction)
+
+    def observationFunction(self, state):
+        if self.lastState:
+            self.updater(state)
+        self.lastState = state
+        return state
+
+    def final(self, state):
+        self.updater(state)
+        self.lastState = None
+        self.lastAction = None
+        if self.isInTraining():
+            self.episodesSoFar += 1
+            logging.info("Training " + str(self.episodesSoFar) + " of " + str(self.numTraining))
+        else:
+            self.epsilon = 0.0
+            self.alpha = 0.0
+
+    def isInTraining(self):
+        return self.episodesSoFar < self.numTraining
+
+    def isInTesting(self):
+        return not self.isInTraining()
+
+    def printQ(self, state, currentValue, maxPossibleFutureValue, calcVal, lastAction):
+        print "\nlast State Score " + str(self.lastState.getScore())
+        print "new Score :" + str(state.getScore())
+        print "last Action : " + str(lastAction)
+        print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
+        print "calcValue : " + str(calcVal)
+
+
 class myDict(dict):
     def __init__(self, default):
         self.default = default
