@@ -567,7 +567,7 @@ class Game:
         sys.stderr = OLD_STDERR
 
 
-    def run( self , single=False , beQuiet=False ):
+    def run( self , single=False , beQuiet=False , gno=0):
         """
         Main control loop for game play.
         """
@@ -647,10 +647,12 @@ class Game:
             action = None
             self.mute(agentIndex)
             #print "agent:  " + str(self.agents[0])
-
+            print "actual game = " + str(gno)
             if not beQuiet:
                 if single:
                     raw_input("Press enter to continue")
+                    #print self.getProgress() <- wtf is this?
+                    print "game no: " + str(gno)
 
             if self.catchExceptions:
                 try:

@@ -48,10 +48,12 @@ class LauncherController:
 
         singleStepModus = DatatypeUtils.stringToBoolean(self.view.singleStep.get())
         if singleStepModus:
-            print "singe step modus active"
+            print("single step modus active ")
             PacmanGlobals.singleSteps = singleStepModus
         else:
             PacmanGlobals.singleSteps = singleStepModus
+
+        PacmanGlobals.logIt = DatatypeUtils.stringToBoolean(self.view.logIt.get())
 
         numGhostsValue = DatatypeUtils.stringToInteger(self.view.numGhostsVar.get())
         PacmanGlobals.numGhostAgents = numGhostsValue

@@ -636,12 +636,17 @@ def replayGame( layout, actions, display ):
 
     display.finish()
 
-def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 , singleStep=False):
+def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0, catchExceptions=False, timeout=30 , singleStep=False, logIt=False):
     # import __main__
     # __main__.__dict__['_display'] = display
 
     singleStepModus = PacmanGlobals.singleSteps
+    print " log it? " + str(PacmanGlobals.logIt)
 
+    # create logfile
+    if PacmanGlobals.logIt:
+        fileName = raw_input("Enter your input: ");
+        logz = open(fileName+".txt", "wb")
 
 
     # print str(singleStepModus)
@@ -660,7 +665,7 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
             gameDisplay = display
             rules.quiet = False
         game = rules.newGame( layout, pacman, ghosts, gameDisplay, beQuiet, catchExceptions, singleStepModus)
-        game.run(singleStepModus, beQuiet)
+        game.run(singleStepModus, beQuiet, i)
         if not beQuiet: games.append(game)
 
         if record:
@@ -680,6 +685,13 @@ def runGames( layout, pacman, ghosts, display, numGames, record, numTraining = 0
         print 'Win Rate:      %d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
         print 'Record:       ', ', '.join([ ['Loss', 'Win'][int(w)] for w in wins])
 
+        wRate = '%d/%d (%.2f)' % (wins.count(True), len(wins), winRate)
+
+        logz.write('Average Score:'+ str(sum(scores) / float(len(scores))))
+        #logz.write('Scores:       ' + ', '.join([str(score) for score in scores]))
+        logz.write(str('\nWin rate ' + wRate))
+        #logz.write('Record:       ' + ', '.join([ ['Loss', 'Win'][int(w)] for w in wins]))
+
     return games
 
 def startByLauncher(arguments):
@@ -694,9 +706,9 @@ def startByLauncher(arguments):
         debug_log = logging.INFO
     logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%d.%m.%Y %H:%M:%S --', level=debug_log)
     """ if you want to log to file and append message to messages from successive runs """
-    #logging.basicConfig(filename='logfile.log',level=logging.DEBUG)
+    logging.basicConfig(filename='logfile.log',level=logging.DEBUG)
     """ if you want to log to file and open a new file every time """
-    #logging.basicConfig(filename='logfile.log', filemode='w', level=logging.DEBUG)
+    logging.basicConfig(filename='logfile.log', filemode='w', level=logging.DEBUG)
     return runGames( **args )
 
 if __name__ == '__main__':

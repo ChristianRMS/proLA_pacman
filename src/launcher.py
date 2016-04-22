@@ -207,6 +207,10 @@ class LauncherView(Tkinter.Tk):
         self.singleStep = self.createCheckBox(self.nextRow)
         self.finishRow()
 
+        self.createLabel("Log it?", self.nextRow)
+        self.logIt = self.createCheckBox(self.nextRow)
+        self.finishRow()
+
         # Button to apply default settings
         defaultSettingsButton = Tkinter.Button(self,
             text=u"Standard-Einstellungen laden",

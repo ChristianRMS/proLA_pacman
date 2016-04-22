@@ -4,3 +4,4 @@ class PacmanGlobals:
     numGhostAgents = None
     debugModeBool = None
     singleSteps = None
+    logIt = None
