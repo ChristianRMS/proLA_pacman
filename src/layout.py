@@ -30,12 +30,12 @@ class Layout:
         self.walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
         self.capsules = []
+        self.intersections = []
         self.agentPositions = []
         self.numGhosts = 0
         self.processLayoutText(layoutText)
         self.layoutText = layoutText
         self.totalFood = len(self.food.asList())
-        self.intersections = []
         # self.initializeVisibilityMatrix()
 
     def getLayoutText(self):
@@ -52,7 +52,6 @@ class Layout:
 
     def getIntersections(self):
         return self.intersections
-
 
     def initializeVisibilityMatrix(self):
         global VISIBILITY_MATRIX_CACHE
@@ -123,7 +122,7 @@ class Layout:
         for y in range(self.height):
             for x in range(self.width):
                 layoutChar = layoutText[maxY - y][x]
-                self.processLayoutChar(x, y, layoutChar)
+                self.processLayoutChar(x, y, layoutChar, layoutText)
         # for y in range(self.height):
         #     for x in range(self.width):
         #         layoutChar = layoutText[maxY - y][x]
@@ -132,22 +131,27 @@ class Layout:
         self.agentPositions = [ ( i == 0, pos) for i, pos in self.agentPositions]
 
     # def processLayoutChar4Walls(self, x , y , layoutChar, layoutText):
-         # if layoutChar == 'o':
-         #    self.capsules.append((x, y))
-         #    # intersections hack
-         #    if (self.getWallCount(x,y,layoutChar, layoutText)>=2):
-         #        self.intersections.append((x,y))
+    #      if layoutChar == 'o':
+    #         self.capsules.append((x, y))
+            # intersections hack
+            #
+            #
+            #self.setIntersections.append((x,y))
 
-    def processLayoutChar(self, x, y, layoutChar):
+    def processLayoutChar(self, x, y, layoutChar, layoutText):
         if layoutChar == '%':
             self.walls[x][y] = True
         elif layoutChar == '.':
             self.food[x][y] = True
+            if (self.getWallCount(x,y,layoutChar, layoutText)<=2):
+                #print "tst"
+                self.intersections.append((x,y))
         elif layoutChar == 'o':
             self.capsules.append((x, y))
             # intersections hack
-            #if (self.getWallCount(x,y,layoutChar)>=2):
-            #    self.intersections.append((x,y))
+            # if (self.getWallCount(x,y,layoutChar, layoutText)<=2):
+            #     print "tst"
+            #     self.intersections.append((x,y))
         elif layoutChar == 'P':
             self.agentPositions.append( (0, (x, y) ) )
         elif layoutChar in ['G']:
@@ -157,23 +161,29 @@ class Layout:
             self.agentPositions.append( (int(layoutChar), (x,y)))
             self.numGhosts += 1
 
-    # def getWallCount(self , x, y, layoutChar, layoutText):
-    #     count = 0
-    #     maxX = len(layoutText[0])
-    #     maxY = len(layoutText)
-    #     if not (x-1 <= 0) and (y > maxY):
-    #         if (layoutText[x-1][y]=='%'):
-    #             count = count+1
-    #     if not (x+1 <= maxX) and (y > maxY):
-    #         if (layoutText[x+1][y]=='%'):
-    #             count = count+1
-    #     if not (y-1 <= 0) and (x > maxX):
-    #         if (layoutText[x][y-1]=='%'):
-    #             count = count+1
-    #     if not (y+1 <= maxY) and (x > maxX):
-    #         if (layoutText[x][y+1]=='%'):
-    #             count = count+1
-    #     return count
+    def getWallCount(self , x, y, layoutChar, layoutText):
+        count = 0
+        maxX = len(layoutText[0])
+        maxY = len(layoutText)
+        #print str(maxX) + " - " + str(maxY) + str(layoutText[1][1]=='o')
+        if not (x-1 <= 0) and (y > maxY):
+            if (layoutText[x-1][y]=='%'):
+                print "layoutText[x-1][y]=='%'"
+                count += 1
+        elif not (x+1 <= maxX) and (y > maxY):
+            if (layoutText[x+1][y]=='%'):
+                print "layoutText[x+1][y]=='%'"
+                count += 1
+        elif not (y-1 <= 0) and (x > maxX):
+            if (layoutText[x][y-1]=='%'):
+                print "layoutText[x][y-1]=='%'"
+                count += 1
+        elif not (y+1 <= maxY) and (x > maxX):
+            if (layoutText[x][y+1]=='%'):
+                print "layoutText[x][y+1]=='%'"
+                count += 1
+        #print str(count) + "county"
+        return count
 
 def getLayout(name, back = 2):
     if name.endswith('.lay'):

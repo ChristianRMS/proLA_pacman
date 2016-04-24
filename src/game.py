@@ -386,6 +386,9 @@ class GameStateData:
             self.layout = prevState.layout
             self._eaten = prevState._eaten
             self.score = prevState.score
+            self.intersections = prevState.layout.intersections
+            self.capsules = prevState.layout.capsules
+
 
         self._foodEaten = None
         self._foodAdded = None
@@ -394,6 +397,7 @@ class GameStateData:
         self._lose = False
         self._win = False
         self.scoreChange = 0
+        self.intersections = None
 
     def deepCopy( self ):
         state = GameStateData( self )
@@ -518,10 +522,11 @@ class Game:
     The Game manages the control flow, soliciting actions from agents.
     """
 
-    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False ):
+    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False, layout=None ):
         self.agentCrashed = False
         self.agents = agents
         self.display = display
+        self.intersections = layout.getIntersections()
         self.rules = rules
         self.startingIndex = startingIndex
         self.gameOver = False
@@ -531,6 +536,7 @@ class Game:
         self.totalAgentTimes = [0 for agent in agents]
         self.totalAgentTimeWarnings = [0 for agent in agents]
         self.agentTimeout = False
+        self.capsules = layout.capsules
         import cStringIO
         self.agentOutput = [cStringIO.StringIO() for agent in agents]
 
@@ -638,15 +644,19 @@ class Game:
                         self.unmute()
                         return
                 else:
-                    observation = agent.observationFunction(self.state.deepCopy())
+                    observation = agent.observationFunction(self.state.deepCopy(), self.intersections)
                 self.unmute()
             else:
                 observation = self.state.deepCopy()
+
+
 
             # Solicit an action
             action = None
             self.mute(agentIndex)
             #print "agent:  " + str(self.agents[0])
+            print "capsules = " + str(self.capsules)
+            print "intersections = " + str(self.intersections)
             print "actual game = " + str(gno)
             if not beQuiet:
                 if single:

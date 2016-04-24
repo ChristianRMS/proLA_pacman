@@ -6,10 +6,9 @@ import sys
 import game
 from bfsSearch import ReinforcementSearch
 from game import Directions
-from src import layout
-
 
 class AbstractQState():
+
     def __init__(self, state, direction):
         #self.state = state
         # TODO: check this => these keys are not in featue but in stateSearch/ searchResult
@@ -17,18 +16,19 @@ class AbstractQState():
         self.ghostThreat = features['nearestGhostDistances']
         self.foodDistance = features['nearestFoodDist']
         self.powerPelletDist = features['nearestPowerPelletDist']
+        self.intersections = features['intersections']
         # self.eatableGhosts = features['nearestEatableGhostDistances']
         #self.direction = direction
 
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             # return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist and self.eatableGhosts == other.eatableGhosts
-            return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist
+            return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist and self.instersections == other.intersections
         else:
             return False
     def __hash__(self):
         # return hash(hash(self.ghostThreat) + hash(self.foodDistance) + hash(self.powerPelletDist) + hash(self.eatableGhosts))
-        return hash(hash(self.ghostThreat) + hash(self.foodDistance) + hash(self.powerPelletDist))
+        return hash(hash(self.ghostThreat) + hash(self.foodDistance) + hash(self.powerPelletDist) + hash(self.intersections))
 
 class Saving():
     def __init__(self, evalFn="scoreEvaluation"):
@@ -68,6 +68,7 @@ class Saving():
 
 class ReinforcementQAgent(game.Agent):
     def __init__(self, numTraining = 0):
+         self.name = "qAgent"
          self.saving = Saving()
          self.random = random.Random()
          self.lastState = None
@@ -120,7 +121,7 @@ class ReinforcementQAgent(game.Agent):
         self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
         self.printQ(state, currentValue, maxPossibleFutureValue, calcVal, self.lastAction)
 
-    def observationFunction(self, state):
+    def observationFunction(self, state, intersections):
         if self.lastState:
             self.updater(state)
         self.lastState = state
@@ -150,89 +151,92 @@ class ReinforcementQAgent(game.Agent):
         print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
         print "calcValue : " + str(calcVal)
 
-# class ReinforcementQEAgent(game.Agent):
-#     def __init__(self, numTraining = 0):
-#          self.saving = Saving()
-#          self.random = random.Random()
-#          self.lastState = None
-#          self.lastAction = None
-#          self.alpha = 0.1
-#          self.gamma = 0.5
-#          self.epsilon = 0.2
-#          self.numTraining = int(numTraining)
-#          self.episodesSoFar = 0
-#
-#     def getAction(self, state):
-#         logging.debug(str(state))
-#         self.lastAction = self.chooseAction(state)
-#         #print "qAgent called."
-#         return self.lastAction
-#
-#     def chooseAction(self, state):
-#         directions = self.legaldirections(state)
-#         rnd = self.random.random()
-#         if self.epsilon > rnd:
-#             logging.debug("random " + str(rnd) + " gamma " + str(self.epsilon))
-#             #print "chooseAction: random"
-#             return self.random.choice(directions)
-#         else:
-#             #print "chooseAction: " + self.saving.getBestDirection(self.lastState, directions)
-#             return self.saving.getBestDirection(self.lastState, directions)
-#
-#     def calcReward(self, state):
-#         return state.getScore() - self.lastState.getScore()
-#
-#     def legaldirections(self, state):
-#         directions = state.getLegalPacmanActions()
-#         self.safeListRemove(directions, Directions.LEFT)
-#         self.safeListRemove(directions, Directions.REVERSE)
-#         self.safeListRemove(directions, Directions.RIGHT)
-#         #self.safeListRemove(directions, Directions.STOP)
-#         return directions
-#
-#     def safeListRemove(self,lst,item):
-#         try:
-#             lst.remove(item)
-#         except ValueError:
-#             pass
-#
-#     def updater(self, state):
-#         reward = self.calcReward(state)
-#         currentValue = self.saving.getRatingForNextState(self.lastAction, self.lastState)
-#         maxPossibleFutureValue = self.saving.getBestValue(state, self.legaldirections(state))
-#         calcVal =  currentValue + self.alpha * (reward + self.gamma * maxPossibleFutureValue - currentValue)
-#         self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
-#         self.printQ(state, currentValue, maxPossibleFutureValue, calcVal, self.lastAction)
-#
-#     def observationFunction(self, state):
-#         if self.lastState:
-#             self.updater(state)
-#         self.lastState = state
-#         return state
-#
-#     def final(self, state):
-#         self.updater(state)
-#         self.lastState = None
-#         self.lastAction = None
-#         if self.isInTraining():
-#             self.episodesSoFar += 1
-#             logging.info("Training " + str(self.episodesSoFar) + " of " + str(self.numTraining))
-#         else:
-#             self.epsilon = 0.0
-#             self.alpha = 0.0
-#
-#     def isInTraining(self):
-#         return self.episodesSoFar < self.numTraining
-#
-#     def isInTesting(self):
-#         return not self.isInTraining()
-#
-#     def printQ(self, state, currentValue, maxPossibleFutureValue, calcVal, lastAction):
-#         print "\nlast State Score " + str(self.lastState.getScore())
-#         print "new Score :" + str(state.getScore())
-#         print "last Action : " + str(lastAction)
-#         print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
-#         print "calcValue : " + str(calcVal)
+class ReinforcementQEAgent(game.Agent):
+    def __init__(self, numTraining = 0):
+         self.name = "qEAgent"
+         self.intersections = []
+         self.saving = Saving()
+         self.random = random.Random()
+         self.lastState = None
+         self.lastAction = None
+         self.alpha = 0.1
+         self.gamma = 0.5
+         self.epsilon = 0.2
+         self.numTraining = int(numTraining)
+         self.episodesSoFar = 0
+
+    def getAction(self, state):
+        logging.debug(str(state))
+        self.lastAction = self.chooseAction(state)
+        #print "qAgent called."
+        return self.lastAction
+
+    def chooseAction(self, state):
+        directions = self.legaldirections(state)
+        rnd = self.random.random()
+        if self.epsilon > rnd:
+            logging.debug("random " + str(rnd) + " gamma " + str(self.epsilon))
+            #print "chooseAction: random"
+            return self.random.choice(directions)
+        else:
+            #print "chooseAction: " + self.saving.getBestDirection(self.lastState, directions)
+            return self.saving.getBestDirection(self.lastState, directions)
+
+    def calcReward(self, state):
+        return state.getScore() - self.lastState.getScore()
+
+    def legaldirections(self, state):
+        directions = state.getLegalPacmanActions()
+        self.safeListRemove(directions, Directions.LEFT)
+        self.safeListRemove(directions, Directions.REVERSE)
+        self.safeListRemove(directions, Directions.RIGHT)
+        #self.safeListRemove(directions, Directions.STOP)
+        return directions
+
+    def safeListRemove(self,lst,item):
+        try:
+            lst.remove(item)
+        except ValueError:
+            pass
+
+    def updater(self, state):
+        reward = self.calcReward(state) # reward = score, not Q-learning reward
+        currentValue = self.saving.getRatingForNextState(self.lastAction, self.lastState)
+        maxPossibleFutureValue = self.saving.getBestValue(state, self.legaldirections(state))
+        calcVal =  currentValue + self.alpha * (reward + self.gamma * maxPossibleFutureValue - currentValue)
+        self.saving.setRatingForState(self.lastAction, self.lastState, calcVal)
+        #self.printQ(state, currentValue, maxPossibleFutureValue, calcVal, self.lastAction)
+
+    def observationFunction(self, state, intersections):
+        if self.lastState:
+            self.intersections = intersections
+            self.updater(state)
+        self.lastState = state
+        return state
+
+    def final(self, state):
+        self.updater(state)
+        self.lastState = None
+        self.lastAction = None
+        if self.isInTraining():
+            self.episodesSoFar += 1
+            logging.info("Training " + str(self.episodesSoFar) + " of " + str(self.numTraining))
+        else:
+            self.epsilon = 0.0
+            self.alpha = 0.0
+
+    def isInTraining(self):
+        return self.episodesSoFar < self.numTraining
+
+    def isInTesting(self):
+        return not self.isInTraining()
+
+    def printQ(self, state, currentValue, maxPossibleFutureValue, calcVal, lastAction):
+        print "\nlast State Score " + str(self.lastState.getScore())
+        print "new Score :" + str(state.getScore())
+        print "last Action : " + str(lastAction)
+        print "currentValue: " + str(currentValue) + " MaxPossibleFutureVal: " + str(maxPossibleFutureValue)
+        print "calcValue : " + str(calcVal)
 
 
 class myDict(dict):
@@ -324,6 +328,9 @@ class RuleGenerator():
             return food[curX][curY] and not (curX, curY) in nonEatableGhosts
         return self.abstractBroadSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)[0]
 
+    #def getIntersections(self, state):
+
+
     def getNextNonEatableGhost(self,state,pacmanSpositionAfterMoving):
         nonEatableGhosts = self.getNonEatableGhosts(state)
         def stopCondition(curX,curY):
@@ -356,7 +363,7 @@ class RuleGenerator():
                 return self.getNextNonEatableGhost(state,pos) + dist
         return None
 
-    def getStateSearch(self, state, direction):
+    def getStateSearch(self, state, direction, name):
         vecX, vecY = self.directionToCoordinate(direction)
         posX, posY = state.getPacmanPosition()
         pacmanSpositionAfterMoving = (posX + vecX, posY + vecY)
@@ -395,6 +402,8 @@ class RuleGenerator():
         #searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
+        if (name == 'rAgent'):
+            searchResult['intersectonDistances'] = self.getIntersectionPositions(state.intersections)
         #searchResult['maximumDistance'] = self.getMaximumDistance(state)
 
         return searchResult
@@ -423,18 +432,18 @@ class RuleGenerator():
         logging.debug("############################################# nonEatableGhosts = " + str(nonEatableGhosts))
         return nonEatableGhosts
 
-    def getAllIntersections(self, state):
-        self.intersections = layout.intersections
+    # def getAllIntersections(self, state):
+    #     self.intersections = self.
 
 
 
     # TODO: insert features here
-    def getfeatures(self, state, direction):
+    def getfeatures(self, state, direction, name):
         features = myDict(0.0)
         #features['base'] = 1.0
         logging.debug("str " + str(state))
         logging.debug("dir " + str(direction))
-        stateSearch = self.getStateSearch(state, direction)
+        stateSearch = self.getStateSearch(state, direction, name)
         maxDistance = state.getWalls().width + state.getWalls().height #stateSearch['maxDistance'] #
         logging.debug("MaxDistance " + str(direction) + " " + str(maxDistance))
         if stateSearch['nearestFoodDist'] is not None:
@@ -460,11 +469,13 @@ class RuleGenerator():
 
 class ReinforcementRAgent(game.Agent):
     def __init__(self, numTraining = 0):
+        self.name = "rAgent"
         self.actionPower = myDict(0.0)
         self.ruleGenerator = RuleGenerator()
         self.random = random.Random()
         self.lastState = None
         self.lastAction = None
+        self.intersections = []
         self.alpha = 0.5
         self.gamma = 0.5
         self.epsilon = 0.1
@@ -479,7 +490,7 @@ class ReinforcementRAgent(game.Agent):
 
     def getCombinedValue(self,state, direction):
         combinedValue = 0.0
-        features = self.ruleGenerator.getfeatures(state, direction)
+        features = self.ruleGenerator.getfeatures(state, direction, self.name)
         logging.debug("Features " + str(direction) + " " + str(features))
         for featureKey in features.keys():
             combinedValue += features[featureKey] * self.actionPower[featureKey]
@@ -488,7 +499,7 @@ class ReinforcementRAgent(game.Agent):
     def updater(self,nextState):
         logging.debug("Start Updating")
         reward = self.calcReward(nextState)
-        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction)
+        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.name)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
         for ruleKey in features.keys():
@@ -554,7 +565,7 @@ class ReinforcementRAgent(game.Agent):
         else:
             return 0.0
 
-    def observationFunction(self, state):
+    def observationFunction(self, state, intersections):
         if self.lastState:
             self.updater(state)
         else:

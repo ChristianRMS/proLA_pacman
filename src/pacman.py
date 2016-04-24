@@ -263,6 +263,7 @@ class GameState:
         PacmanGlobals.layout = layout
         PacmanGlobals.numGhostAgents = numGhostAgents
 
+
 ############################################################################
 #                     THE HIDDEN SECRETS OF PACMAN                         #
 #                                                                          #
@@ -285,7 +286,7 @@ class ClassicGameRules:
         agents = [pacmanAgent] + ghostAgents[:layout.getNumGhosts()]
         initState = GameState()
         initState.initialize( layout, len(ghostAgents) )
-        game = Game(agents, display, self, catchExceptions=catchExceptions)
+        game = Game(agents, display, self, catchExceptions=catchExceptions, layout=layout)
         game.state = initState
         self.initialState = initState.deepCopy()
         self.quiet = quiet
@@ -616,7 +617,7 @@ def loadAgent(pacman, nographics):
                 if nographics and modulename == 'keyboardAgents.py':
                     raise Exception('Using the keyboard requires graphics (not text display)')
                 return getattr(module, pacman)
-    #raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
+    raise Exception('The agent ' + pacman + ' is not specified in any *Agents.py.')
 
 def replayGame( layout, actions, display ):
     import pacmanAgents, ghostAgents
