@@ -9,10 +9,11 @@ from game import Directions
 
 class AbstractQState():
 
-    def __init__(self, state, direction):
+    def __init__(self, state, direction, name, intersections):
         #self.state = state
+        self.intersections = intersections
         # TODO: check this => these keys are not in featue but in stateSearch/ searchResult
-        features = RuleGenerator().getStateSearch(state,direction)
+        features = RuleGenerator().getStateSearch(state,direction, name, intersections)
         self.ghostThreat = features['nearestGhostDistances']
         self.foodDistance = features['nearestFoodDist']
         self.powerPelletDist = features['nearestPowerPelletDist']
@@ -23,7 +24,7 @@ class AbstractQState():
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             # return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist and self.eatableGhosts == other.eatableGhosts
-            return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist and self.instersections == other.intersections
+            return self.ghostThreat == other.ghostThreat and self.foodDistance == other.foodDistance and self.powerPelletDist == other.powerPelletDist #and self.instersections == other.intersections
         else:
             return False
     def __hash__(self):
@@ -31,11 +32,12 @@ class AbstractQState():
         return hash(hash(self.ghostThreat) + hash(self.foodDistance) + hash(self.powerPelletDist) + hash(self.intersections))
 
 class Saving():
-    def __init__(self, evalFn="scoreEvaluation"):
+    def __init__(self, evalFn="scoreEvaluation", name=None):
         self.savedStates = {}
+        self.name = name
 
     def getRatingForNextState(self, direction, state):
-        abstractState = AbstractQState(state, direction)
+        abstractState = AbstractQState(state, direction, self.name, self.intersections)
         value = self.savedStates.get(abstractState)
         if value == None:
             return 0
@@ -43,7 +45,7 @@ class Saving():
             return value
 
     def setRatingForState(self, direction, state, value):
-        abstractState = AbstractQState(state, direction)
+        abstractState = AbstractQState(state, direction, self.name)
         self.savedStates[abstractState] = value
 
     def getBestDirection(self, state, directions):
@@ -69,7 +71,7 @@ class Saving():
 class ReinforcementQAgent(game.Agent):
     def __init__(self, numTraining = 0):
          self.name = "qAgent"
-         self.saving = Saving()
+         self.saving = Saving(self.name)
          self.random = random.Random()
          self.lastState = None
          self.lastAction = None
@@ -363,7 +365,7 @@ class RuleGenerator():
                 return self.getNextNonEatableGhost(state,pos) + dist
         return None
 
-    def getStateSearch(self, state, direction, name):
+    def getStateSearch(self, state, direction, name, intersections):
         vecX, vecY = self.directionToCoordinate(direction)
         posX, posY = state.getPacmanPosition()
         pacmanSpositionAfterMoving = (posX + vecX, posY + vecY)
@@ -402,8 +404,10 @@ class RuleGenerator():
         #searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
-        if (name == 'rAgent'):
-            searchResult['intersectonDistances'] = self.getIntersectionPositions(state.intersections)
+        print "nearestGhostDis = " + str(searchResult['nearestGhostDistances'])
+        print "nearestFoodDis = " + str(searchResult['nearestFoodDist'])
+        # if (name == 'rAgent'):
+            # searchResult['intersectonDistances'] = self.getIntersectionPositions()
         #searchResult['maximumDistance'] = self.getMaximumDistance(state)
 
         return searchResult
@@ -413,6 +417,9 @@ class RuleGenerator():
         if (RuleGenerator.maxDistance == None):
             RuleGenerator.maxDistance = (ReinforcementSearch(state)).getMaximumDistance()
         return RuleGenerator.maxDistance
+
+    # def getIntersectionPositions(self):
+    #     return self.intersections;
 
     def getEatableGhosts(self, state):
         eatableGhosts = []
@@ -438,12 +445,12 @@ class RuleGenerator():
 
 
     # TODO: insert features here
-    def getfeatures(self, state, direction, name):
+    def getfeatures(self, state, direction, name, intersections):
         features = myDict(0.0)
         #features['base'] = 1.0
         logging.debug("str " + str(state))
         logging.debug("dir " + str(direction))
-        stateSearch = self.getStateSearch(state, direction, name)
+        stateSearch = self.getStateSearch(state, direction, name, intersections)
         maxDistance = state.getWalls().width + state.getWalls().height #stateSearch['maxDistance'] #
         logging.debug("MaxDistance " + str(direction) + " " + str(maxDistance))
         if stateSearch['nearestFoodDist'] is not None:
@@ -452,6 +459,8 @@ class RuleGenerator():
         if stateSearch['nearestGhostDistances'] is not None:
             logging.debug("ghostThreat " +  str(stateSearch['nearestGhostDistances']))
             features['ghostThreat'] = (float(stateSearch['nearestGhostDistances'])) #/ maxDistance
+        if stateSearch['intersections'] is not None:
+            state.intersections = stateSearch['intersections']
 #        else:
 #            features['ghostThreat'] = float(maxDistance)
 #        if stateSearch['nearestPowerPelletDist'] is not None:
@@ -490,7 +499,7 @@ class ReinforcementRAgent(game.Agent):
 
     def getCombinedValue(self,state, direction):
         combinedValue = 0.0
-        features = self.ruleGenerator.getfeatures(state, direction, self.name)
+        features = self.ruleGenerator.getfeatures(state, direction, self.name, self.intersections)
         logging.debug("Features " + str(direction) + " " + str(features))
         for featureKey in features.keys():
             combinedValue += features[featureKey] * self.actionPower[featureKey]
@@ -499,7 +508,7 @@ class ReinforcementRAgent(game.Agent):
     def updater(self,nextState):
         logging.debug("Start Updating")
         reward = self.calcReward(nextState)
-        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.name)
+        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.name, self.intersections)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
         for ruleKey in features.keys():

@@ -168,7 +168,7 @@ class LauncherController:
             return True
     
     def loadDefaultSettings(self):
-        self.view.numTrainingVar.set("1500")
+        self.view.numTrainingVar.set("10")
         self.view.numGamesVar.set("1")
         self.view.numGhostsVar.set("2")
         self.view.layoutVar.set("mediumClassic")
@@ -180,6 +180,7 @@ class LauncherController:
         self.view.textGraphicsVar.set("False")
         self.view.quietTextGraphicsVar.set("False")
         self.view.displayDebugVar.set("False")
+        self.view.logFileName.set("log.txt")
 
         self.validateData('Fehlerhafte Einstellungen!', 'Einige Standard-Einstellungswerte sind ungueltig: ')
         
@@ -233,7 +234,7 @@ class LauncherController:
         Config.set('DisplaySettings', 'textGraphics', self.view.textGraphicsVar.get())
         Config.set('DisplaySettings', 'quietTextGraphics', self.view.quietTextGraphicsVar.get())
         Config.set('DisplaySettings', 'displayDebugMode', self.view.displayDebugVar.get())
-        #Config.set('DisplaySettings', 'logFileName', self.view.logFileName.get())
+        Config.set('DisplaySettings', 'logFileName', self.view.logFileName.get())
         Config.write(cfgfile)
         
         cfgfile.close()
