@@ -30,12 +30,16 @@ class Layout:
         self.walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
         self.capsules = []
+        self.intersections = []
         self.agentPositions = []
         self.numGhosts = 0
         self.processLayoutText(layoutText)
         self.layoutText = layoutText
         self.totalFood = len(self.food.asList())
         # self.initializeVisibilityMatrix()
+
+    def getLayoutText(self):
+        return self.layoutText
 
     def getWidth(self):
         return self.width
@@ -45,6 +49,9 @@ class Layout:
     
     def getNumGhosts(self):
         return self.numGhosts
+
+    def getIntersections(self):
+        return self.intersections
 
     def initializeVisibilityMatrix(self):
         global VISIBILITY_MATRIX_CACHE
@@ -115,17 +122,38 @@ class Layout:
         for y in range(self.height):
             for x in range(self.width):
                 layoutChar = layoutText[maxY - y][x]
-                self.processLayoutChar(x, y, layoutChar)
+                self.processLayoutChar(x, y, layoutChar, layoutText)
+                #print "layoutTextlength=" + str(len(layoutText))
+        # for y in range(self.height):
+        #     for x in range(self.width):
+        #         layoutChar = layoutText[maxY - y][x]
+        #         self.processLayoutChar4Walls(x,y,layoutChar, layoutText)
+
         self.agentPositions.sort()
         self.agentPositions = [ ( i == 0, pos) for i, pos in self.agentPositions]
 
-    def processLayoutChar(self, x, y, layoutChar):
+    # def processLayoutChar4Walls(self, x , y , layoutChar, layoutText):
+    #      if layoutChar == 'o':
+    #         self.capsules.append((x, y))
+            # intersections hack
+            #
+            #
+            #self.setIntersections.append((x,y))
+
+    def processLayoutChar(self, x, y, layoutChar, layoutText):
         if layoutChar == '%':
             self.walls[x][y] = True
         elif layoutChar == '.':
             self.food[x][y] = True
+            if (self.getWallCount(x,y,layoutChar, layoutText)==0):
+                #print "wallcount : " + str(self.getWallCount(x,y,layoutChar, layoutText))
+                self.intersections.append((x,y))
         elif layoutChar == 'o':
             self.capsules.append((x, y))
+            # intersections hack
+            # if (self.getWallCount(x,y,layoutChar, layoutText)<=2):
+            #     print "tst"
+            #     self.intersections.append((x,y))
         elif layoutChar == 'P':
             self.agentPositions.append( (0, (x, y) ) )
         elif layoutChar in ['G']:
@@ -134,6 +162,36 @@ class Layout:
         elif layoutChar in  ['1', '2', '3', '4']:
             self.agentPositions.append( (int(layoutChar), (x,y)))
             self.numGhosts += 1
+
+    def getWallCount(self , xx, yy, layoutChar, layoutText):
+        count = 0
+        maxY = len(layoutText[1])
+        maxX = len(layoutText)
+        #print str(maxX) + " - " + str(maxY) + str(layoutText[1][1]=='o')
+        #print str(maxX) + "max X"
+        #print str(maxY) + "max Y"
+        x = yy
+        y = xx
+        if not((x-1 <= 0) and not (y >= maxY) and not (y <= 0) and not (x-1 >= maxX)):
+            #print "x=" + str(x) + "  y=" + str(y)
+            if (layoutText[x-1][y]=='%'):
+                #print "layoutText[x-1][y]=='%'"
+                count += 1
+        if not (x+1 <= maxX) and not(y >= maxY) and not (y <= 0) and not (x+1 <= 0):
+            if (layoutText[x+1][y]=='%'):
+                #print "layoutText[x+1][y]=='%'"
+                count += 1
+        elif not (y-1 <= 0) and not(x >= maxX) and not (y-1 >= maxY) and not (x <= 0):
+            if (layoutText[x][y-1]=='%'):
+                #print "layoutText[x][y-1]=='%'"
+                count += 1
+        elif not (y+1 <= maxY) and not (x >= maxX) and not (y+1 <= 0)  and not (x <= 0):
+            if (layoutText[x][y+1]=='%'):
+                #print "layoutText[x][y+1]=='%'"
+                count += 1
+        #print str(count) + "county"
+        return count
+
 def getLayout(name, back = 2):
     if name.endswith('.lay'):
         layout = tryToLoad('layouts/' + name)

@@ -518,11 +518,12 @@ class Game:
     The Game manages the control flow, soliciting actions from agents.
     """
 
-    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False ):
+    def __init__( self, agents, display, rules, startingIndex=0, muteAgents=False, catchExceptions=False, layout = None ):
         self.agentCrashed = False
         self.agents = agents
         self.display = display
         self.rules = rules
+        self.intersections = layout.getIntersections()
         self.startingIndex = startingIndex
         self.gameOver = False
         self.muteAgents = muteAgents
@@ -637,7 +638,7 @@ class Game:
                         self.unmute()
                         return
                 else:
-                    observation = agent.observationFunction(self.state.deepCopy())
+                    observation = agent.observationFunction(self.state.deepCopy(), self.intersections)
                 self.unmute()
             else:
                 observation = self.state.deepCopy()

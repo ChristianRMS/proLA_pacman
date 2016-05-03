@@ -212,10 +212,17 @@ class RuleGenerator():
 
     def abstractBroadSearch(self,field, startingPosition, stopCondition):
         startX, startY = startingPosition
+        #print "startX" + str(startX)
+        #print "startY" + str(startY)
+        #print "stop" + str(stopCondition)
+        
+        
         openList = [(startX, startY, 0)]
         closedList = set()
         while openList:
             curX, curY, dist = openList.pop(0)
+            #print "curX" + str(curX)
+            #print "curY" + str(curY)
             if not (curX, curY) in closedList:
                 closedList.add((curX, curY))
                 if stopCondition(curX, curY):
@@ -238,16 +245,24 @@ class RuleGenerator():
         return self.abstractBroadSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)[0]
     
     def ghostsFeature(self,state,pacmanSpositionAfterMoving, direction, intersections, maximumPathLength, ghostSpeed):
-        nearestIntersection = self.getNearestIntersectionInDirection(pacmanSpositionAfterMoving, direction, intersections)
+        nearestIntersection = self.getNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
         
         def stopCondition(curX,curY):
             return (curX, curY) in nonEatableGhosts
         
         a = maximumPathLength
+        print "path" + str(a)
         v = ghostSpeed
+        print "v" + str(v)
         bc = self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, stopCondition)
+        print "bc" + str(bc)
         dc = self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
-        return (a + dc * v - bc)/a
+        print "dc" + str(dc)
+        dcXv = float(dc * v)
+        aADD = float(a + dcXv)
+        bcSUB = float(aADD - bc)
+        result = float(bcSUB/a)
+        return result
 
     def getNextEatableGhost(self, state, pacmanSpositionAfterMoving):
         powerPellets = state.getCapsules()
@@ -275,46 +290,63 @@ class RuleGenerator():
                 return self.getNextNonEatableGhost(state,pos) + dist
         return None
     
-    def getDistanceBetweenGhostAndIntersection(self, state, Intersection, ghostPosition):
+    def getDistanceBetweenGhostAndIntersection(self, state, intersection, ghostPosition):
         result = float('inf')
-        if Intersection != None and ghostPosition != None:
-            result = self.abstractBroadSearch(state.getWalls(), ghostPosition, Intersection)
+        #print "ghostPosition" + str(ghostPosition)
+        #print "inter " + str(intersection)
+        if intersection != None and ghostPosition != None:
+#            def stopCondition(curX,curY):
+#                return (curX, curY) in intersection
+            result = self.abstractBroadSearch(state.getWalls(), ghostPosition, ghostPosition)
         if result == float('inf'):
             result = 0
         return result
     
     def distanceToNearestIntersectionInDirection(self, state, startposition, direction, intersections):    
-            nearestIntersection = self.getNearestIntersectionInDirection(startposition, direction, intersections)
+            nearestIntersection = self.getNearestIntersectionInDirection(state, startposition, direction, intersections)
             
             if startposition != None and nearestIntersection != None:
-                return self.abstractBroadSearch(state.getWalls(), startposition, nearestIntersection);
+                def stopCondition(curX,curY):
+                        return (curX, curY) in nearestIntersection
+                return self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)
             else:
                 return 0
-    def getNearestIntersectionInDirection(self, startposition, direction, intersections):
+    def getNearestIntersectionInDirection(self, state, startposition, direction, intersections):
         result = None
         MinDistance = float('inf')
-        
+        print "intersections" + str(intersections)
         if intersections != None:
-            for intersection in intersections:    
-                distance = self.abstractBroadSearch(state.getWalls(), startposition, intersection)
-                
+            for intersection in intersections:   
+                def stopCondition(curX,curY):
+                    print "curX" + str(curX)
+                    print "curY" + str(curY)
+                    print "intersection" + str(intersection)
+                    print str((curX, curY) in intersection)
+                    curX = float(curX)
+                    curY = float(curY)
+                    return (curX, curY) in intersection
+                #print "intersection" + str(intersection)
+                distance = self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)
+                print "distance" + str(distance)
+                intersectionX, intersectionY = intersection
+                startX, startY = startposition
                 if direction == Directions.EAST:
-                   if intersection.get(x) >= startposition.get(x):
+                   if intersectionX >= startX:
                        if distance < MinDistance:
                            result = intersection 
                            minDistance = distance
                 if direction == Directions.WEST:
-                   if intersection.get(x) <= startposition.get(x):
+                   if intersectionX <= startX:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
                 if direction == Directions.NORTH:
-                   if intersection.get(y) >= startposition.get(y):
+                   if intersectionY >= startY:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
                 if direction == Directions.SOUTH:
-                   if intersection.get(y) <= startposition.get(y):
+                   if intersectionY <= startY:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
@@ -356,7 +388,7 @@ class RuleGenerator():
                 #for (sucX, sucY) in self.getMovableDirections(curX, curY,walls):
                 #    openList.append((sucX, sucY, dist + 1))
                 #maxDistance = max(maxDistance, dist)
-        searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
+        searchResult['nearestEatableGhostDistances'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['ghostFeature'] = self.ghostsFeature(state,pacmanSpositionAfterMoving, direction, intersections, self.getMaximumDistance(state), ghostSpeed)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
@@ -405,6 +437,7 @@ class RuleGenerator():
             features['ghostThreat'] = (float(stateSearch['nearestGhostDistances'])) #/ maxDistance
         if stateSearch['ghostFeature'] is not None:
             features['ghostFeature'] = (float(stateSearch['ghostFeature'])) #/ maxDistance
+            print "ghost" + str(features['ghostFeature'])
 #        else:
 #            features['ghostThreat'] = float(maxDistance)
 #        if stateSearch['nearestPowerPelletDist'] is not None:
@@ -413,7 +446,10 @@ class RuleGenerator():
 #        else:
 #            features['powerPelletValuability'] = 0.0
         if stateSearch['nearestEatableGhostDistances'] is not None:
-            features['eatableGhosts'] = (float((maxDistance - stateSearch['nearestEatableGhostDistances'])/maxDistance)) #/ maxDistance
+            features['eatableGhosts'] = (float(float(maxDistance - stateSearch['nearestEatableGhostDistances'])/maxDistance)) #/ maxDistance
+            print "eatable" + str(features['eatableGhosts'])
+            print str(maxDistance)
+            print str(stateSearch['nearestEatableGhostDistances'])
         features['action'] = (float(1 if lastAction == direction else 0))
         features['maxDistance'] = maxDistance
         #features.divideAll(maxDistance)
@@ -580,12 +616,12 @@ class NeuralAgent(game.Agent):
         features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction)
         shortestPillDistance = features['foodValuability']
         shortestGhostDistance = features['ghostThreat']
-        print shortestGhostDistance
-        print shortestPillDistance
+        #print shortestGhostDistance
+        #print shortestPillDistance
         #shortestEatableGhost = features['eatableGhosts']
         """print "StepVA" + str(self.step)
-        print "spd: " + str(shortestPillDistance)
-        print "sgd: " + str(shortestGhostDistance)"""
+        #print "spd: " + str(shortestPillDistance)
+        #print "sgd: " + str(shortestGhostDistance)"""
         action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
         return action
 
@@ -599,8 +635,8 @@ class NeuralAgent(game.Agent):
         shortestGhostDistance = features['ghostThreat']
         #shortestEatableGhost = features['eatableGhosts']
         """print "StepUP" + str(self.step)
-        print "spd: " + str(shortestPillDistance)
-        print "sgd: " + str(shortestGhostDistance)"""
+        #print "spd: " + str(shortestPillDistance)
+        #print "sgd: " + str(shortestGhostDistance)"""
         ds.addSample((shortestPillDistance, shortestGhostDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         #for ruleKey in features.keys():
@@ -668,7 +704,8 @@ class NeuralAgent(game.Agent):
         else:
             return 0.0
 
-    def observationFunction(self, state):
+    def observationFunction(self, state, intersections):
+        self.intersections = intersections
         if self.lastState:
             self.updater(state)
         else:
