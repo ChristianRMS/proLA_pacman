@@ -11,8 +11,8 @@ class NeuralController:
     def __init__(self):
         self.net = FeedForwardNetwork()
         
-        self.inLayer = LinearLayer(2)
-        self.hiddenLayer = SigmoidLayer(25)
+        self.inLayer = LinearLayer(4)
+        self.hiddenLayer = SigmoidLayer(50)
         self.outLayer = LinearLayer(1)
         
         self.net.addInputModule(self.inLayer)
@@ -52,8 +52,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, ghostDistance, pillDistance):
-        result = self.net.activate([ghostDistance, pillDistance])
+    def calculateAction(self, shortestPillDistance,shortestGhostDistance, eatableGhost, ghost):
+        result = self.net.activate([shortestPillDistance,shortestGhostDistance, eatableGhost, ghost])
         return result[0]
     
     def printNetwork(self):

@@ -8,6 +8,7 @@ import random
 from networkx.algorithms.operators.binary import intersection
 from boto.dynamodb.condition import NULL
 from dask.array.ghost import nearest
+from Cython.Shadow import typeof
 
 
 class AbstractQState():
@@ -221,6 +222,8 @@ class RuleGenerator():
         closedList = set()
         while openList:
             curX, curY, dist = openList.pop(0)
+            curX = int(curX)
+            curY = int(curY)
             #print "curX" + str(curX)
             #print "curY" + str(curY)
             if not (curX, curY) in closedList:
@@ -230,6 +233,31 @@ class RuleGenerator():
                 for (sucX, sucY) in self.getMovableDirections(curX, curY,field):
                     openList.append((sucX, sucY, dist + 1))
         return [None,None]
+    
+    
+    def countSearch(self, field, startingPosition, stopCondition):
+        startX, startY = startingPosition
+        openList = [(startX, startY, 0)]
+        closedList = set()
+        count = 0
+        while openList:
+            curX, curY, dist = openList.pop(0)
+            if not (curX, curY) in closedList:
+                closedList.add((curX, curY))
+                if stopCondition(curX, curY):
+                    count = count+1
+                for (sucX, sucY) in self.getMovableDirections(curX, curY, field):
+                    openList.append((sucX, sucY, dist + 1))
+        return count
+
+
+    def countFood(self, state, pacmanSpositionAfterMoving):
+        food = state.getFood()
+        nonEatableGhosts = self.getNonEatableGhosts(state)
+        def stopCondition(curX, curY):
+            return food[curX][curY] and not (curX, curY) in nonEatableGhosts
+
+        return self.countSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)
 
     def getNearestFoodPosition(self,state, pacmanSpositionAfterMoving):
         food = state.getFood()
@@ -244,20 +272,32 @@ class RuleGenerator():
             return (curX, curY) in nonEatableGhosts
         return self.abstractBroadSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)[0]
     
-    def ghostsFeature(self,state,pacmanSpositionAfterMoving, direction, intersections, maximumPathLength, ghostSpeed):
-        nearestIntersection = self.getNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
-        
+    def getNextNonEatableGhostPosition(self,state,pacmanSpositionAfterMoving):
+        nonEatableGhosts = self.getNonEatableGhosts(state)
         def stopCondition(curX,curY):
             return (curX, curY) in nonEatableGhosts
+        return self.abstractBroadSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)
+    
+    def ghostsFeature(self,state,pacmanSpositionAfterMoving, direction, intersections, maximumPathLength, ghostSpeed):
+        nearestIntersection = self.getNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
+        nextNonEatableGhost = self.getNextNonEatableGhostPosition(state, pacmanSpositionAfterMoving)[1]
+        
+        if nearestIntersection == None or nextNonEatableGhost == None:
+            return None
+        
+        def stopCondition(curX,curY):
+            #print "ghost" + str(nextNonEatableGhost)
+            result = curX == nextNonEatableGhost[0] and curY == nextNonEatableGhost[1]
+            return result
         
         a = maximumPathLength
-        print "path" + str(a)
+        #print "path" + str(a)
         v = ghostSpeed
-        print "v" + str(v)
+        #print "v" + str(v)
         bc = self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, stopCondition)
-        print "bc" + str(bc)
+        #print "bc" + str(bc)
         dc = self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
-        print "dc" + str(dc)
+        #print "dc" + str(dc)
         dcXv = float(dc * v)
         aADD = float(a + dcXv)
         bcSUB = float(aADD - bc)
@@ -277,7 +317,7 @@ class RuleGenerator():
             def stopConditionEatableGhost(curX,curY):
                 return (curX, curY) in eatableGhosts
             return self.abstractBroadSearch(field, pacmanSpositionAfterMoving, stopConditionEatableGhost)[0]
-        elif len(powerPellets) != 0:
+        '''elif len(powerPellets) != 0:
             def stopConditionPallet(curX,curY):
                 if (curX, curY) in powerPellets and not (curX, curY) in nonEatableGhosts:
                     return True
@@ -287,7 +327,7 @@ class RuleGenerator():
             dist = pallet[0]
             pos = pallet[1]
             if pos:
-                return self.getNextNonEatableGhost(state,pos) + dist
+                return self.getNextNonEatableGhost(state,pos) + dist'''
         return None
     
     def getDistanceBetweenGhostAndIntersection(self, state, intersection, ghostPosition):
@@ -295,9 +335,11 @@ class RuleGenerator():
         #print "ghostPosition" + str(ghostPosition)
         #print "inter " + str(intersection)
         if intersection != None and ghostPosition != None:
-#            def stopCondition(curX,curY):
-#                return (curX, curY) in intersection
-            result = self.abstractBroadSearch(state.getWalls(), ghostPosition, ghostPosition)
+#           def stopCondition(curX,curY):
+#               return (curX, curY) in intersection
+            #print "intersection " + str(intersection)
+            #print "ghost " + str(ghostPosition)
+            result = self.abstractBroadSearch(state.getWalls(), intersection, ghostPosition)[0]
         if result == float('inf'):
             result = 0
         return result
@@ -307,49 +349,114 @@ class RuleGenerator():
             
             if startposition != None and nearestIntersection != None:
                 def stopCondition(curX,curY):
-                        return (curX, curY) in nearestIntersection
-                return self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)
+                    result = curX == nearestIntersection[0] and curY == nearestIntersection[1]
+                    return result
+                return self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)[0]
             else:
                 return 0
+     
+    def entrapmentFeature(self, state, pacmanPosition, intersections, direction): 
+        numberOfSafeJunctions = self.getNumberOfSafeIntersections(state, pacmanPosition, intersections)
+        numberOfSafeJunctionsInDirection = self.getNumberOfSafeIntersectionsInDircetion(state, pacmanPosition, intersections, direction)  
+         
+        if numberOfSafeJunctions == None or numberOfSafeJunctionsInDirection == None:
+            return None
+           
+        return (numberOfSafeJunctions - numberOfSafeJunctionsInDirection)/numberOfSafeJunctions
+    
+    def getNumberOfSafeIntersections(self, state, pacmanPosition, intersections):
+        ghosts = self.getNonEatableGhosts(state)
+        count = 0
+        
+        if intersections == None:
+            return None
+        
+        for intersection in intersections:
+            def stopCondition(curX,curY):
+                    result = curX == intersection[0] and curY == intersection[1]
+                    return result
+            distanceToPacman = self.abstractBroadSearch(state.getWalls(), pacmanPosition, stopCondition)
+            nearestGhostDistance = float('inf')
+            for ghost in ghosts:
+                ghostDistance = self.abstractBroadSearch(state.getWalls(), ghost, stopCondition)
+                if ghostDistance < nearestGhostDistance:
+                    nearestGhostDistance = ghostDistance
+            if distanceToPacman < nearestGhostDistance:
+                count+=1
+        return count
+                
+    def getNumberOfSafeIntersectionsInDircetion(self, state, pacmanPosition, intersections, direction):
+        ghosts = self.getNonEatableGhosts(state)
+        result = 0
+        
+        if intersections == None:
+            return None
+        
+        for intersection in intersections:
+            def stopCondition(curX,curY):
+                    result = curX == intersection[0] and curY == intersection[1]
+                    return result
+            distanceToPacman = self.abstractBroadSearch(state.getWalls(), pacmanPosition, stopCondition)
+            nearestGhostDistance = float('inf')
+            for ghost in ghosts:
+                ghostDistance = self.abstractBroadSearch(state.getWalls(), ghost, stopCondition)
+                if ghostDistance < nearestGhostDistance:
+                    nearestGhostDistance = ghostDistance
+            if distanceToPacman < nearestGhostDistance:
+                result+=1
+    
     def getNearestIntersectionInDirection(self, state, startposition, direction, intersections):
         result = None
         MinDistance = float('inf')
-        print "intersections" + str(intersections)
-        if intersections != None:
-            for intersection in intersections:   
+        #print "intersections" + str(intersections)
+        
+        if intersections == None:
+            return None
+        
+        for intersection in intersections: 
+            intersectionX, intersectionY = intersection
+            startX, startY = startposition
+            if direction == Directions.EAST:
+                if intersectionX <= startX and intersectionY != startY:
+                       continue
+                if direction == Directions.WEST:
+                   if intersectionX >= startX and intersectionY != startY:
+                       continue
+                if direction == Directions.NORTH:
+                   if intersectionY <= startY and intersectionX != startX:
+                       continue
+                if direction == Directions.SOUTH:
+                   if intersectionY >= startY and intersectionX != startX:
+                       continue
                 def stopCondition(curX,curY):
-                    print "curX" + str(curX)
-                    print "curY" + str(curY)
-                    print "intersection" + str(intersection)
-                    print str((curX, curY) in intersection)
-                    curX = float(curX)
-                    curY = float(curY)
-                    return (curX, curY) in intersection
-                #print "intersection" + str(intersection)
-                distance = self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)
-                print "distance" + str(distance)
+                    result = curX == intersection[0] and curY == intersection[1]
+                    return result
+                distance = self.abstractBroadSearch(state.getWalls(), startposition, stopCondition)[0]
+                #print "distance" + str(distance)
                 intersectionX, intersectionY = intersection
                 startX, startY = startposition
+                #print str(direction)
                 if direction == Directions.EAST:
-                   if intersectionX >= startX:
+                    if intersectionX >= startX and intersectionY == startY:
                        if distance < MinDistance:
                            result = intersection 
                            minDistance = distance
                 if direction == Directions.WEST:
-                   if intersectionX <= startX:
+                   if intersectionX <= startX and intersectionY == startY:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
                 if direction == Directions.NORTH:
-                   if intersectionY >= startY:
+                   if intersectionY >= startY and intersectionX == startX:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
                 if direction == Directions.SOUTH:
-                   if intersectionY <= startY:
+                   if intersectionY <= startY and intersectionX == startX:
                        if distance < MinDistance:
                            result = intersection
                            minDistance = distance
+        #print "result " + str(result)
         return result;
         
     def getStateSearch(self, state, direction, intersections = None, ghostSpeed = 0.8):
@@ -388,10 +495,13 @@ class RuleGenerator():
                 #for (sucX, sucY) in self.getMovableDirections(curX, curY,walls):
                 #    openList.append((sucX, sucY, dist + 1))
                 #maxDistance = max(maxDistance, dist)
-        searchResult['nearestEatableGhostDistances'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
+        
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['ghostFeature'] = self.ghostsFeature(state,pacmanSpositionAfterMoving, direction, intersections, self.getMaximumDistance(state), ghostSpeed)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
+        searchResult['nearestEatableGhostDistances'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
+        #searchResult['entrapmentFeature'] = self.entrapmentFeature(state, pacmanSpositionAfterMoving, intersections, direction)
+        #searchResult['foodcount'] = self.countFood(state,pacmanSpositionAfterMoving)
         #searchResult['maximumDistance'] = self.getMaximumDistance(state)
 
         return searchResult
@@ -421,7 +531,7 @@ class RuleGenerator():
         return nonEatableGhosts
 
     # TODO: insert features here
-    def getfeatures(self, state, direction, intersections = None, ghostSpeed = 0.8, lastAction = None):
+    def getfeatures(self, state, direction, intersections = None, ghostSpeed = 0.8, lastAction = None, startFood = None):
         features = myDict(0.0)
         #features['base'] = 1.0
         logging.debug("str " + str(state))
@@ -430,14 +540,11 @@ class RuleGenerator():
         maxDistance = state.getWalls().width + state.getWalls().height #stateSearch['maxDistance'] #
         logging.debug("MaxDistance " + str(direction) + " " + str(maxDistance))
         if stateSearch['nearestFoodDist'] is not None:
-            logging.debug("FoodDist " +  str(stateSearch['nearestFoodDist']))
             features['foodValuability'] = (float(stateSearch['nearestFoodDist'])) #/ maxDistance
         if stateSearch['nearestGhostDistances'] is not None:
-            logging.debug("ghostThreat " +  str(stateSearch['nearestGhostDistances']))
             features['ghostThreat'] = (float(stateSearch['nearestGhostDistances'])) #/ maxDistance
         if stateSearch['ghostFeature'] is not None:
             features['ghostFeature'] = (float(stateSearch['ghostFeature'])) #/ maxDistance
-            print "ghost" + str(features['ghostFeature'])
 #        else:
 #            features['ghostThreat'] = float(maxDistance)
 #        if stateSearch['nearestPowerPelletDist'] is not None:
@@ -447,9 +554,13 @@ class RuleGenerator():
 #            features['powerPelletValuability'] = 0.0
         if stateSearch['nearestEatableGhostDistances'] is not None:
             features['eatableGhosts'] = (float(float(maxDistance - stateSearch['nearestEatableGhostDistances'])/maxDistance)) #/ maxDistance
-            print "eatable" + str(features['eatableGhosts'])
-            print str(maxDistance)
-            print str(stateSearch['nearestEatableGhostDistances'])
+            #print "eatable" + str(features['eatableGhosts'])
+            #print str(maxDistance)
+            #print str(stateSearch['nearestEatableGhostDistances'])
+        if stateSearch['entrapmentFeature'] is not None:
+            features["entrapment"] = float(stateSearch['entrapmentFeature'])
+        if stateSearch['foodcount'] is not None:
+            features['levelProgress'] = ((float(startFood)) - (float(stateSearch['foodcount']))) / (float(startFood))
         features['action'] = (float(1 if lastAction == direction else 0))
         features['maxDistance'] = maxDistance
         #features.divideAll(maxDistance)
@@ -605,6 +716,7 @@ class NeuralAgent(game.Agent):
         self.intersections = []
         self.ghostSpeed = 0.8
         self.lastlastAction = None
+        self.startFood = 0
 
     def safeListRemove(self,lst,item):
         try:
@@ -613,31 +725,56 @@ class NeuralAgent(game.Agent):
             pass
 
     def getCombinedValue(self, state, direction):
-        features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction)
+        if self.startFood == 0:
+            self.startFood = self.ruleGenerator.getStateSearch(state, direction)['foodcount']
+        features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction, self.startFood)
         shortestPillDistance = features['foodValuability']
+        #print "shoretestPillDistance: " + str(shortestPillDistance)
         shortestGhostDistance = features['ghostThreat']
+        #print "shortestGhostDistance: " + str(shortestGhostDistance)
+        #actionFeature = features['action']
+        #print "actionFeature: " + str(actionFeature)
+        #entrapment = features["entrapment"]
+        #print "entrapment: " + str(entrapment)
+        eatableGhost = features['eatableGhosts']
+        #print "eatableGhost: " + str(eatableGhost)
+        ghost = features['ghostFeature']
+        #print "ghost: " + str(ghost)
+        #levelProgress = features['levelProgress']
+        #print "levelProgress: " + str(levelProgress)
         #print shortestGhostDistance
         #print shortestPillDistance
-        #shortestEatableGhost = features['eatableGhosts']
         """print "StepVA" + str(self.step)
         #print "spd: " + str(shortestPillDistance)
         #print "sgd: " + str(shortestGhostDistance)"""
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
+        #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, actionFeature, entrapment, eatableGhost, ghost, levelProgress)
+        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, ghost)
         return action
 
     def updater(self,nextState):
         reward = self.calcReward(nextState)
-        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.intersections, self.ghostSpeed, self.lastlastAction)
+        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.intersections, self.ghostSpeed, self.lastlastAction, self.startFood)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        ds = SupervisedDataSet(2,1)
+        ds = SupervisedDataSet(4,1)
         shortestPillDistance = features['foodValuability']
+        #print "shoretestPillDistance2: " + str(shortestPillDistance)
         shortestGhostDistance = features['ghostThreat']
-        #shortestEatableGhost = features['eatableGhosts']
+        #print "shortestGhostDistance2: " + str(shortestGhostDistance)
+        #actionFeature = features['action']
+        #print "actionFeature2: " + str(actionFeature)
+        #entrapment = features["entrapment"]
+        #print "entrapment2: " + str(entrapment)
+        eatableGhost = features['eatableGhosts']
+        #print "eatableGhost2: " + str(eatableGhost)
+        ghost = features['ghostFeature']
+        #print "ghost2: " + str(ghost)
+        #levelProgress = features['levelProgress']
+        #print "levelProgress2: " + str(levelProgress)
         """print "StepUP" + str(self.step)
         #print "spd: " + str(shortestPillDistance)
         #print "sgd: " + str(shortestGhostDistance)"""
-        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        ds.addSample((shortestPillDistance,shortestGhostDistance, eatableGhost, ghost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         #for ruleKey in features.keys():
         #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
@@ -681,7 +818,7 @@ class NeuralAgent(game.Agent):
         self.safeListRemove(directions, Directions.LEFT)
         self.safeListRemove(directions, Directions.REVERSE)
         self.safeListRemove(directions, Directions.RIGHT)
-        # self.safeListRemove(directions, Directions.STOP)
+        #self.safeListRemove(directions, Directions.STOP)
         return directions
 
     def getBestDirection(self, state, directions):
