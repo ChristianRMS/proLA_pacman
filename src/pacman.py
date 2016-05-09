@@ -84,6 +84,9 @@ class GameState:
         GameState.explored = set()
         return tmp
     getAndResetExplored = staticmethod(getAndResetExplored)
+    
+    #def getMaxPathLength(self):
+        ##
 
     def getLegalActions( self, agentIndex=0 ):
         """

@@ -168,6 +168,31 @@ class myDict(dict):
             self[key] = float(self[key]) / value
 
 class RuleGenerator():
+    
+    def countSearch(self, field, startingPosition, stopCondition):
+        startX, startY = startingPosition
+        openList = [(startX, startY, 0)]
+        closedList = set()
+        count = 0
+        while openList:
+            curX, curY, dist = openList.pop(0)
+            if not (curX, curY) in closedList:
+                closedList.add((curX, curY))
+                if stopCondition(curX, curY):
+                    count = count+1
+                for (sucX, sucY) in self.getMovableDirections(curX, curY, field):
+                    openList.append((sucX, sucY, dist + 1))
+        return count
+
+    def countFood(self, state, pacmanSpositionAfterMoving):
+        food = state.getFood()
+        nonEatableGhosts = self.getNonEatableGhosts(state)
+
+        def stopCondition(curX, curY):
+            return food[curX][curY] and not (curX, curY) in nonEatableGhosts
+
+        return self.countSearch(state.getWalls(), pacmanSpositionAfterMoving, stopCondition)
+    
 
     def directionToCoordinate(self, direction):
         if direction == Directions.NORTH:
@@ -208,7 +233,7 @@ class RuleGenerator():
 
         return lst
 
-    def abstractBroadSearch(self,field, startingPosition, stopCondition):
+    def abstractBroadSearch(self, field, startingPosition, stopCondition):
         startX, startY = startingPosition
         openList = [(startX, startY, 0)]
         closedList = set()
@@ -218,9 +243,18 @@ class RuleGenerator():
                 closedList.add((curX, curY))
                 if stopCondition(curX, curY):
                     return [dist,(curX, curY)]
-                for (sucX, sucY) in self.getMovableDirections(curX, curY,field):
+                for (sucX, sucY) in self.getMovableDirections(curX, curY, field):
                     openList.append((sucX, sucY, dist + 1))
         return [None,None]
+
+
+    def getMaxPathLength(self, state):
+        def stopCondition(curX,curY):
+            if curX == 25 and curY == 25:
+                return True 
+            else:
+                return False                
+        return self.abstractBroadSearch(state.getWalls(), [1,1], stopCondition)
 
     def getNearestFoodPosition(self,state, pacmanSpositionAfterMoving):
         food = state.getFood()
@@ -297,11 +331,12 @@ class RuleGenerator():
                 #for (sucX, sucY) in self.getMovableDirections(curX, curY,walls):
                 #    openList.append((sucX, sucY, dist + 1))
                 #maxDistance = max(maxDistance, dist)
-        searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
+        searchResult['nearestPowerPelletDist'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving) #Herausfinden was nun genau!
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
+        searchResult['foodcount'] = self.countFood(state,pacmanSpositionAfterMoving)
+        searchResult['maxPathLength'] = self.getMaxPathLength(state)
         #searchResult['maximumDistance'] = self.getMaximumDistance(state)
-
         return searchResult
 
     maxDistance = None
@@ -329,7 +364,7 @@ class RuleGenerator():
         return nonEatableGhosts
 
     # TODO: insert features here
-    def getfeatures(self, state, direction):
+    def getfeatures(self, state, direction, startFood = 0):
         features = myDict(0.0)
         #features['base'] = 1.0
         logging.debug("str " + str(state))
@@ -337,6 +372,10 @@ class RuleGenerator():
         stateSearch = self.getStateSearch(state, direction)
         maxDistance = state.getWalls().width + state.getWalls().height #stateSearch['maxDistance'] #
         logging.debug("MaxDistance " + str(direction) + " " + str(maxDistance))
+        if stateSearch['foodcount'] is not None:
+            features['foodcount'] = ((float(startFood)) - (float(stateSearch['foodcount']))) / (float(startFood))
+        if stateSearch['maxPathLength'] is not None:
+            features['maxPathLength'] = stateSearch['maxPathLength']
         if stateSearch['nearestFoodDist'] is not None:
             logging.debug("FoodDist " +  str(stateSearch['nearestFoodDist']))
             features['foodValuability'] = (float(stateSearch['nearestFoodDist'])) #/ maxDistance
@@ -501,6 +540,7 @@ class NeuralAgent(game.Agent):
         self.numTraining = int(numTraining)
         self.episodesSoFar = 0
         self.step = 0
+        self.startFood = 0
 
     def safeListRemove(self,lst,item):
         try:
@@ -509,31 +549,41 @@ class NeuralAgent(game.Agent):
             pass
 
     def getCombinedValue(self, state, direction):
-        features = self.ruleGenerator.getfeatures(state, direction)
+        if self.startFood == 0:
+            self.startFood = self.ruleGenerator.getStateSearch(state, direction)['foodcount']
+        features = self.ruleGenerator.getfeatures(state, direction, self.startFood)
         shortestPillDistance = features['foodValuability']
         shortestGhostDistance = features['ghostThreat']
-        print shortestGhostDistance
-        print shortestPillDistance
+        maxPathLength = features['maxPathLength']
+        #print shortestGhostDistance
+        levelProgress = features['foodcount']
+        #print levelProgress
         #shortestEatableGhost = features['eatableGhosts']
         """print "StepVA" + str(self.step)
         print "spd: " + str(shortestPillDistance)
         print "sgd: " + str(shortestGhostDistance)"""
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
+        spD = (maxPathLength[0] - shortestPillDistance) / maxPathLength[0]
+        sgD = (maxPathLength[0] - shortestGhostDistance) / maxPathLength[0]
+        action = self.network.calculateAction(spD,sgD, levelProgress)
         return action
 
     def updater(self,nextState):
         reward = self.calcReward(nextState)
-        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction)
+        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.startFood)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
         ds = SupervisedDataSet(2,1)
         shortestPillDistance = features['foodValuability']
         shortestGhostDistance = features['ghostThreat']
+        maxPathLength = features['maxPathLength']
+        levelProgress = features['foodcount']
         #shortestEatableGhost = features['eatableGhosts']
         """print "StepUP" + str(self.step)
         print "spd: " + str(shortestPillDistance)
         print "sgd: " + str(shortestGhostDistance)"""
-        ds.addSample((shortestPillDistance, shortestGhostDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        spD = (maxPathLength[0] - shortestPillDistance) / maxPathLength[0]
+        sgD = (maxPathLength[0] - shortestGhostDistance) / maxPathLength[0]
+        ds.addSample((spD, sgD), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         #for ruleKey in features.keys():
         #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
@@ -576,7 +626,7 @@ class NeuralAgent(game.Agent):
         self.safeListRemove(directions, Directions.LEFT)
         self.safeListRemove(directions, Directions.REVERSE)
         self.safeListRemove(directions, Directions.RIGHT)
-        # self.safeListRemove(directions, Directions.STOP)
+        #self.safeListRemove(directions, Directions.STOP)
         return directions
 
     def getBestDirection(self, state, directions):
@@ -590,6 +640,7 @@ class NeuralAgent(game.Agent):
             if bestVal < tmpValue:
                 bestVal = tmpValue
                 bestDirection = direction
+       # print bestDirection
         return bestDirection
 
     def getBestValue(self, state, directions):

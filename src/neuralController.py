@@ -5,6 +5,7 @@ from pybrain.structure.networks.feedforward import FeedForwardNetwork
 from pybrain.structure.modules.linearlayer import LinearLayer
 from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
+from pybrain.tools.plotting import MultilinePlotter
 class NeuralController:
        
     #--Konstruktor--
@@ -12,7 +13,7 @@ class NeuralController:
         self.net = FeedForwardNetwork()
         
         self.inLayer = LinearLayer(2)
-        self.hiddenLayer = SigmoidLayer(25)
+        self.hiddenLayer = SigmoidLayer(20)
         self.outLayer = LinearLayer(1)
         
         self.net.addInputModule(self.inLayer)
@@ -52,16 +53,25 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, ghostDistance, pillDistance):
+    def calculateAction(self, ghostDistance, pillDistance, levelProgress):
         result = self.net.activate([ghostDistance, pillDistance])
         return result[0]
     
     def printNetwork(self):
-        print "Training abgeschlossen"
-        print "Input to Hidden Connections:"
-        print self.in_to_hidden.params
-        print "Hidden to Output Connections:"
-        print self.hidden_to_out.params
+        for mod in self.net.modules:
+            print("Module:", mod.name)
+            if mod.paramdim > 0:
+                print("--parameters:", mod.params)
+        for conn in self.net.connections[mod]:
+            print("-connection to", conn.outmod.name)
+            if conn.paramdim > 0:
+                print("- parameters", conn.params)
+        if hasattr(self.net, "recurrentConns"):
+            print("Recurrent connections")
+            for conn in self.net.recurrentConns:
+                print("-", conn.inmod.name, " to", conn.outmod.name)
+                if conn.paramdim > 0:
+                    print("- parameters", conn.params)
     
     def getTrainer(self):
         return self.trainer

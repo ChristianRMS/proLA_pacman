@@ -222,6 +222,15 @@ class LauncherController:
         Config.set('DisplaySettings', 'textGraphics', self.view.textGraphicsVar.get())
         Config.set('DisplaySettings', 'quietTextGraphics', self.view.quietTextGraphicsVar.get())
         Config.set('DisplaySettings', 'displayDebugMode', self.view.displayDebugVar.get())
-        Config.write(cfgfile)
         
+        
+        Config.add_section('MaximumPathLengths')
+        Config.set('MaximumPathLengths', 'capsuleClassic', "12")
+        Config.set('MaximumPathLengths', 'contestClassic', "34")
+        Config.set('MaximumPathLengths', 'mediumClassic', "25")
+        Config.set('MaximumPathLengths', 'minimaxClassic', "5")
+        Config.set('MaximumPathLengths', 'openClassic', "30")
+        
+        
+        Config.write(cfgfile)
         cfgfile.close()
