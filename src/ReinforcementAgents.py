@@ -356,7 +356,7 @@ class RuleGenerator():
        # numberOfSafeJunctions = self.getNumberOfSafeIntersections(nonEatableGhosts, state, pacmanPosition, intersections)
        # numberOfSafeJunctionsInDirection = self.getNumberOfSafeIntersectionsInDircetion(nonEatableGhosts, state, pacmanPosition, intersections, direction)  
         ghosts = nonEatableGhosts
-        print str(pacmanPosition)
+        #print str(pacmanPosition)
         saveIntersectionsCountInDir = 0
         saveIntersectionsCount = 0    
         if intersections == None:
@@ -365,10 +365,10 @@ class RuleGenerator():
             def stopCondition(curX,curY):
                 result = curX == intersection[0] and curY == intersection[1]
                 return result
-            distanceToPacman = self.abstractBroadSearch(state.getWalls(), pacmanPosition, stopCondition)
+            distanceToPacman = self.abstractBroadSearch(state.getWalls(), pacmanPosition, stopCondition)[0]
             nearestGhostDistance = float('inf')
             for ghost in ghosts:
-                ghostDistance = self.abstractBroadSearch(state.getWalls(), ghost, stopCondition)
+                ghostDistance = self.abstractBroadSearch(state.getWalls(), ghost, stopCondition)[0]
                 if ghostDistance < nearestGhostDistance:
                     nearestGhostDistance = ghostDistance
             if distanceToPacman < nearestGhostDistance:
@@ -388,8 +388,8 @@ class RuleGenerator():
                     if pacmanPositionY > intersectionY:
                        saveIntersectionsCountInDir+=1 
                                 
-        print "SaveIntersections: " + str(saveIntersectionsCount)
-        print "SaveIntersectionsInDir: " + str(saveIntersectionsCountInDir)
+       # print "SaveIntersections: " + str(saveIntersectionsCount)
+       # print "SaveIntersectionsInDir: " + str(saveIntersectionsCountInDir)
         if saveIntersectionsCount == 0:
             return 0          
         return (saveIntersectionsCount - saveIntersectionsCountInDir)/saveIntersectionsCount
@@ -531,7 +531,7 @@ class RuleGenerator():
         maxDistance = state.getWalls().width + state.getWalls().height #stateSearch['maxDistance'] #
         logging.debug("MaxDistance " + str(direction) + " " + str(maxDistance))
         if stateSearch['nearestFoodDist'] is not None:
-            features['foodValuability'] = (float(stateSearch['nearestFoodDist'])) #/ maxDistance
+            features['foodValuability'] = (float(float((maxDistance - stateSearch['nearestFoodDist'])) / maxDistance)) #/ maxDistance
         if stateSearch['nearestGhostDistances'] is not None:
             features['ghostThreat'] = (float(stateSearch['nearestGhostDistances'])) #/ maxDistance
         if stateSearch['ghostFeature'] is not None:
@@ -708,6 +708,7 @@ class NeuralAgent(game.Agent):
         self.ghostSpeed = 0.8
         self.lastlastAction = None
         self.startFood = 0
+        self.features = None
 
     def safeListRemove(self,lst,item):
         try:
@@ -717,18 +718,17 @@ class NeuralAgent(game.Agent):
 
     def getCombinedValue(self, state, direction):
         if self.startFood == 0:
-            print "StartFood = 0"
             self.startFood = self.ruleGenerator.getStateSearch(state, direction)['foodcount']
-        features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction, self.startFood)
-        shortestPillDistance = features['foodValuability']
+        self.features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction, self.startFood)
+        shortestPillDistance = self.features['foodValuability']
         #print "shoretestPillDistance: " + str(shortestPillDistance)
-        shortestGhostDistance = features['ghostThreat']
+        shortestGhostDistance = self.features['ghostThreat']
         #print "shortestGhostDistance: " + str(shortestGhostDistance)
-        actionFeature = features['action']
+        actionFeature = self.features['action']
         #print "actionFeature: " + str(actionFeature)
-        entrapment = features["entrapment"]
+        entrapment = self.features["entrapment"]
         #print "entrapment: " + str(entrapment)
-        eatableGhost = features['eatableGhosts']
+        eatableGhost = self.features['eatableGhosts']
         #print "eatableGhost: " + str(eatableGhost)
         #ghost = features['ghostFeature']
         #print "ghost: " + str(ghost)
@@ -744,20 +744,20 @@ class NeuralAgent(game.Agent):
         return action
 
     def updater(self,nextState):
+        #print "update!"
         reward = self.calcReward(nextState)
-        features = self.ruleGenerator.getfeatures(self.lastState, self.lastAction, self.intersections, self.ghostSpeed, self.lastlastAction, self.startFood)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
         ds = SupervisedDataSet(5,1)
-        shortestPillDistance = features['foodValuability']
+        shortestPillDistance = self.features['foodValuability']
         #print "shoretestPillDistance2: " + str(shortestPillDistance)
-        shortestGhostDistance = features['ghostThreat']
+        shortestGhostDistance = self.features['ghostThreat']
         #print "shortestGhostDistance2: " + str(shortestGhostDistance)
-        actionFeature = features['action']
+        actionFeature = self.features['action']
         #print "actionFeature2: " + str(actionFeature)
-        entrapment = features["entrapment"]
+        entrapment = self.features["entrapment"]
         #print "entrapment2: " + str(entrapment)
-        eatableGhost = features['eatableGhosts']
+        eatableGhost = self.features['eatableGhosts']
         #print "eatableGhost2: " + str(eatableGhost)
         #ghost = features['ghostFeature']
         #print "ghost2: " + str(ghost)
@@ -851,8 +851,8 @@ class NeuralAgent(game.Agent):
         self.lastState = None
         self.lastAction = None
         #raw_input("Press Any Key ")
+        self.network.printNetwork()
         if self.isInTraining():
-            self.network.printNetwork()
             self.episodesSoFar += 1
             logging.info("Training " + str(self.episodesSoFar) + " of " + str (self.numTraining))
         else:
