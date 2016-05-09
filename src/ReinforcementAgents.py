@@ -213,6 +213,7 @@ class RuleGenerator():
 
     def abstractBroadSearch(self,field, startingPosition, stopCondition):
         startX, startY = startingPosition
+        counter = 0
         #print "startX" + str(startX)
         #print "startY" + str(startY)
         #print "stop" + str(stopCondition)
@@ -221,6 +222,7 @@ class RuleGenerator():
         openList = [(startX, startY, 0)]
         closedList = set()
         while openList:
+            counter+=1
             curX, curY, dist = openList.pop(0)
             curX = int(curX)
             curY = int(curY)
@@ -232,6 +234,7 @@ class RuleGenerator():
                     return [dist,(curX, curY)]
                 for (sucX, sucY) in self.getMovableDirections(curX, curY,field):
                     openList.append((sucX, sucY, dist + 1))
+        print "BroadSearchCount: " + str(counter)
         return [None,None]
     
     
@@ -497,7 +500,7 @@ class RuleGenerator():
                 #maxDistance = max(maxDistance, dist)
         
         searchResult['nearestGhostDistances'] = self.getNextNonEatableGhost(state, pacmanSpositionAfterMoving)
-        searchResult['ghostFeature'] = self.ghostsFeature(state,pacmanSpositionAfterMoving, direction, intersections, self.getMaximumDistance(state), ghostSpeed)
+        #searchResult['ghostFeature'] = self.ghostsFeature(state,pacmanSpositionAfterMoving, direction, intersections, self.getMaximumDistance(state), ghostSpeed)
         searchResult['nearestFoodDist'] = self.getNearestFoodPosition(state,pacmanSpositionAfterMoving)
         searchResult['nearestEatableGhostDistances'] = self.getNextEatableGhost(state, pacmanSpositionAfterMoving)
         #searchResult['entrapmentFeature'] = self.entrapmentFeature(state, pacmanSpositionAfterMoving, intersections, direction)
@@ -732,7 +735,7 @@ class NeuralAgent(game.Agent):
         #print "shoretestPillDistance: " + str(shortestPillDistance)
         shortestGhostDistance = features['ghostThreat']
         #print "shortestGhostDistance: " + str(shortestGhostDistance)
-        #actionFeature = features['action']
+        actionFeature = features['action']
         #print "actionFeature: " + str(actionFeature)
         #entrapment = features["entrapment"]
         #print "entrapment: " + str(entrapment)
@@ -748,7 +751,7 @@ class NeuralAgent(game.Agent):
         #print "spd: " + str(shortestPillDistance)
         #print "sgd: " + str(shortestGhostDistance)"""
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, actionFeature, entrapment, eatableGhost, ghost, levelProgress)
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, ghost)
+        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature)
         return action
 
     def updater(self,nextState):
@@ -761,20 +764,20 @@ class NeuralAgent(game.Agent):
         #print "shoretestPillDistance2: " + str(shortestPillDistance)
         shortestGhostDistance = features['ghostThreat']
         #print "shortestGhostDistance2: " + str(shortestGhostDistance)
-        #actionFeature = features['action']
+        actionFeature = features['action']
         #print "actionFeature2: " + str(actionFeature)
         #entrapment = features["entrapment"]
         #print "entrapment2: " + str(entrapment)
         eatableGhost = features['eatableGhosts']
         #print "eatableGhost2: " + str(eatableGhost)
-        ghost = features['ghostFeature']
+        #ghost = features['ghostFeature']
         #print "ghost2: " + str(ghost)
         #levelProgress = features['levelProgress']
         #print "levelProgress2: " + str(levelProgress)
         """print "StepUP" + str(self.step)
         #print "spd: " + str(shortestPillDistance)
         #print "sgd: " + str(shortestGhostDistance)"""
-        ds.addSample((shortestPillDistance,shortestGhostDistance, eatableGhost, ghost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        ds.addSample((shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         #for ruleKey in features.keys():
         #    difference = reward + self.gamma * maxPossibleFutureValue - combinatedValue
