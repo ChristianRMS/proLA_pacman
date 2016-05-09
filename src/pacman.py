@@ -151,6 +151,9 @@ class GameState:
     def getPacmanPosition( self ):
         return self.data.agentStates[0].getPosition()
 
+    def getGhostPosition( self ):
+        return self.data.agentStates[1].getPosition()
+
     def getGhostStates( self ):
         return self.data.agentStates[1:]
 

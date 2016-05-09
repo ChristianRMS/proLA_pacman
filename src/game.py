@@ -415,6 +415,10 @@ class GameStateData:
             copiedStates.append( agentState.copy() )
         return copiedStates
 
+    def getIntersections(self):
+        return self.intersections
+
+
     def __eq__( self, other ):
         """
         Allows two states to be compared.
@@ -656,7 +660,7 @@ class Game:
             self.mute(agentIndex)
             #print "agent:  " + str(self.agents[0])
             print "capsules = " + str(self.capsules)
-            print "intersections = " + str(self.intersections)
+            print "game.py :: intersections = " + str(self.intersections)
             print "actual game = " + str(gno)
             if not beQuiet:
                 if single:

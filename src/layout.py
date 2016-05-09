@@ -29,6 +29,7 @@ class Layout:
         self.height= len(layoutText)
         self.walls = Grid(self.width, self.height, False)
         self.food = Grid(self.width, self.height, False)
+        self.wallList = []
         self.capsules = []
         self.intersections = []
         self.agentPositions = []
@@ -143,10 +144,11 @@ class Layout:
     def processLayoutChar(self, x, y, layoutChar, layoutText):
         if layoutChar == '%':
             self.walls[x][y] = True
+            self.wallList.append((x,y))
         elif layoutChar == '.':
             self.food[x][y] = True
             if (self.getWallCount(x,y,layoutChar, layoutText)==0):
-                print "wallcount : " + str(self.getWallCount(x,y,layoutChar, layoutText))
+                #print "wallcount : " + str(self.getWallCount(x,y,layoutChar, layoutText))
                 self.intersections.append((x,y))
         elif layoutChar == 'o':
             self.capsules.append((x, y))
@@ -160,36 +162,46 @@ class Layout:
             self.agentPositions.append( (1, (x, y) ) )
             self.numGhosts += 1
         elif layoutChar in  ['1', '2', '3', '4']:
+
             self.agentPositions.append( (int(layoutChar), (x,y)))
             self.numGhosts += 1
 
-    def getWallCount(self , xx, yy, layoutChar, layoutText):
+    def getWallCount(self , x, y, layoutChar, layoutText):
         count = 0
         maxY = len(layoutText[1])
         maxX = len(layoutText)
         #print str(maxX) + " - " + str(maxY) + str(layoutText[1][1]=='o')
-        print str(maxX) + "max X"
-        print str(maxY) + "max Y"
-        x = yy
-        y = xx
-        if not((x-1 <= 0) and not (y >= maxY) and not (y <= 0) and not (x-1 >= maxX)):
-            print "x=" + str(x) + "  y=" + str(y)
-            if (layoutText[x-1][y]=='%'):
-                print "layoutText[x-1][y]=='%'"
-                count += 1
-        if not (x+1 <= maxX) and not(y >= maxY) and not (y <= 0) and not (x+1 <= 0):
-            if (layoutText[x+1][y]=='%'):
-                print "layoutText[x+1][y]=='%'"
-                count += 1
-        elif not (y-1 <= 0) and not(x >= maxX) and not (y-1 >= maxY) and not (x <= 0):
-            if (layoutText[x][y-1]=='%'):
-                print "layoutText[x][y-1]=='%'"
-                count += 1
-        elif not (y+1 <= maxY) and not (x >= maxX) and not (y+1 <= 0)  and not (x <= 0):
-            if (layoutText[x][y+1]=='%'):
-                print "layoutText[x][y+1]=='%'"
-                count += 1
-        #print str(count) + "county"
+        #print str(maxX) + "max X"
+        #print str(maxY) + "max Y"
+        #x = yy
+        #y = xx
+        # if not((x-1 <= 0) and not (y >= maxY) and not (y <= 0) and not (x-1 >= maxX)):
+        #  #   print "x=" + str(x) + "  y=" + str(y)
+        #     if (layoutText[x-1][y]=='%'):
+        #         print "layoutText[x-1][y]=='%'"
+        #         count += 1
+        # if not (x+1 <= maxX) and not(y >= maxY) and not (y <= 0) and not (x+1 <= 0):
+        #     if (layoutText[x+1][y]=='%'):
+        #   #      print "layoutText[x+1][y]=='%'"
+        #         count += 1
+        # elif not (y-1 <= 0) and not(x >= maxX) and not (y-1 >= maxY) and not (x <= 0):
+        #     if (layoutText[x][y-1]=='%'):
+        #    #     print "layoutText[x][y-1]=='%'"
+        #         count += 1
+        # elif not (y+1 <= maxY) and not (x >= maxX) and not (y+1 <= 0)  and not (x <= 0):
+        #     if (layoutText[x][y+1]=='%'):
+        #     #    print "layoutText[x][y+1]=='%'"
+        #         count += 1
+        # #print str(count) + "county"
+
+        if((x+1,y) in self.wallList):
+            count+=1
+        if((x-1,y) in self.wallList):
+            count+=1
+        if((x,y-1) in self.wallList):
+            count+=1
+        if((x,y+1) in self.wallList):
+            count+=1
         return count
 
 def getLayout(name, back = 2):
