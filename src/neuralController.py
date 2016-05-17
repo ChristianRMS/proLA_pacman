@@ -5,6 +5,8 @@ from pybrain.structure.networks.feedforward import FeedForwardNetwork
 from pybrain.structure.modules.linearlayer import LinearLayer
 from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
+from pybrain.tools.shortcuts import buildNetwork
+import pickle
 class NeuralController:
        
     #--Konstruktor--
@@ -29,6 +31,8 @@ class NeuralController:
         
         self.trainer = BackpropTrainer(self.net)
         self.data = []
+        
+        
     
     #Feature Eins - LevelProgress
     def levelProgress(self, amountOfPillsTotal, amountOfPillsRemain):
@@ -66,4 +70,12 @@ class NeuralController:
     def getTrainer(self):
         return self.trainer
     
+    def save(self):
+        fileObject = open('netSave', 'w')
+        pickle.dump(self.net, fileObject)
+        fileObject.close()
     
+    def load(self):
+        fileObject = open('netSave', 'r')
+        self.net = pickle.load(fileObject)
+        fileObject.close()

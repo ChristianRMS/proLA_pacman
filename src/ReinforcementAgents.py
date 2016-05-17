@@ -9,6 +9,7 @@ from networkx.algorithms.operators.binary import intersection
 from boto.dynamodb.condition import NULL
 from dask.array.ghost import nearest
 from Cython.Shadow import typeof
+import os.path
 
 
 class AbstractQState():
@@ -691,8 +692,11 @@ class ReinforcementRAgent(game.Agent):
 """
 class NeuralAgent(game.Agent):
         
-    def __init__(self, numTraining = 0):
+    
+    def __init__(self, numTraining = 0):       
         self.network = NeuralController()
+        if os.path.isfile("/netSave.xml"):
+            self.network.load()
         self.actionPower = myDict(0.0)
         self.ruleGenerator = RuleGenerator()
         self.random = random.Random()
@@ -861,6 +865,7 @@ class NeuralAgent(game.Agent):
             if state.isLose():
                 #raw_input("Press Any Key ")
                 pass
+            self.network.save()
 
     def isInTraining(self):
         return self.episodesSoFar < self.numTraining
