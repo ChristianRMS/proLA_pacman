@@ -5,6 +5,9 @@ from pybrain.structure.networks.feedforward import FeedForwardNetwork
 from pybrain.structure.modules.linearlayer import LinearLayer
 from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
+from pybrain.tools.xml.networkwriter import NetworkWriter
+from pybrain.tools.xml.networkreader import NetworkReader
+from pybrain.tools.shortcuts import buildNetwork
 class NeuralController:
        
     #--Konstruktor--
@@ -65,5 +68,11 @@ class NeuralController:
     
     def getTrainer(self):
         return self.trainer
+    
+    def save(self):
+        NetworkWriter.writeToFile(self.net, 'netSave.xml')
+        
+    def load(self):
+        self.net = NetworkReader.readFrom('netSave.xml')
     
     

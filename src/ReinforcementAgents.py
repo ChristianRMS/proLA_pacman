@@ -9,7 +9,8 @@ from networkx.algorithms.operators.binary import intersection
 from boto.dynamodb.condition import NULL
 from dask.array.ghost import nearest
 from Cython.Shadow import typeof
-
+import pickle
+import os.path 
 
 class AbstractQState():
     def __init__(self, state, direction):
@@ -171,6 +172,9 @@ class myDict(dict):
             self[key] = float(self[key]) / value
 
 class RuleGenerator():
+    
+    def __init__(self):
+        self.hasMapCalc = False
 
     def directionToCoordinate(self, direction):
         if direction == Directions.NORTH:
@@ -212,6 +216,32 @@ class RuleGenerator():
         return lst
 
     def abstractBroadSearch(self,field, startingPosition, stopCondition):
+        startX, startY = startingPosition
+        counter = 0
+        #print "startX" + str(startX)
+        #print "startY" + str(startY)
+        #print "stop" + str(stopCondition)
+        
+        
+        openList = [(startX, startY, 0)]
+        closedList = set()
+        while openList:
+            counter+=1
+            curX, curY, dist = openList.pop(0)
+            curX = int(curX)
+            curY = int(curY)
+            #print "curX" + str(curX)
+            #print "curY" + str(curY)
+            if not (curX, curY) in closedList:
+                closedList.add((curX, curY))
+                if stopCondition(curX, curY):
+                    return [dist,(curX, curY)]
+                for (sucX, sucY) in self.getMovableDirections(curX, curY,field):
+                    openList.append((sucX, sucY, dist + 1))
+       # print "BroadSearchCount: " + str(counter)
+        return [None,None]
+    
+    def abstractBroadResult(self, startingPosition, stopCondition):
         startX, startY = startingPosition
         counter = 0
         #print "startX" + str(startX)
@@ -523,6 +553,23 @@ class RuleGenerator():
 
     # TODO: insert features here
     def getfeatures(self, state, direction, intersections = None, ghostSpeed = 0.8, lastAction = None, startFood = None):
+        if self.hasMapCalc == False:
+            self.hasMapCalc = True
+            dic = dict()
+            for x in range(0, state.getWalls().width):
+                for y in range(0, state.getWalls().height):
+                    for xx in range(0, state.getWalls().width):
+                        for yy in range (0, state.getWalls().width):
+                           key = str(x) + str(y) + str(xx) + str (yy)
+                           def stopCondition(curX,curY):
+                               result = curX == xx and curY == yy
+                               return result
+                           startPosition = (x, y)
+                           field = state.getWalls()
+                           dic[key] = self.abstractBroadSearch(field, startPosition, stopCondition)
+            print "Fertig!"
+            pickle.dump( dic, open( "save.p", "wb" ) )
+            
         features = myDict(0.0)
         #features['base'] = 1.0
         logging.debug("str " + str(state))
@@ -693,6 +740,8 @@ class NeuralAgent(game.Agent):
         
     def __init__(self, numTraining = 0):
         self.network = NeuralController()
+        if os.path.isfile("/netSave.xml"):
+            self.network.load()
         self.actionPower = myDict(0.0)
         self.ruleGenerator = RuleGenerator()
         self.random = random.Random()
@@ -861,6 +910,7 @@ class NeuralAgent(game.Agent):
             if state.isLose():
                 #raw_input("Press Any Key ")
                 pass
+            self.network.save()
 
     def isInTraining(self):
         return self.episodesSoFar < self.numTraining
