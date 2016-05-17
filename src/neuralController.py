@@ -5,9 +5,9 @@ from pybrain.structure.networks.feedforward import FeedForwardNetwork
 from pybrain.structure.modules.linearlayer import LinearLayer
 from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
-from pybrain.tools.xml.networkwriter import NetworkWriter
-from pybrain.tools.xml.networkreader import NetworkReader
 from pybrain.tools.shortcuts import buildNetwork
+import pickle
+
 class NeuralController:
        
     #--Konstruktor--
@@ -32,6 +32,8 @@ class NeuralController:
         
         self.trainer = BackpropTrainer(self.net)
         self.data = []
+        
+        
     
     #Feature Eins - LevelProgress
     def levelProgress(self, amountOfPillsTotal, amountOfPillsRemain):
@@ -70,9 +72,11 @@ class NeuralController:
         return self.trainer
     
     def save(self):
-        NetworkWriter.writeToFile(self.net, 'netSave.xml')
-        
+        fileObject = open('netSave', 'w')
+        pickle.dump(self.net, fileObject)
+        fileObject.close()
+    
     def load(self):
-        self.net = NetworkReader.readFrom('netSave.xml')
-    
-    
+        fileObject = open('netSave', 'r')
+        self.net = pickle.load(fileObject)
+        fileObject.close()
