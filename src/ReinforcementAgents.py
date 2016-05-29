@@ -297,12 +297,15 @@ class RuleGenerator():
         
         a = maximumPathLength
         v = ghostSpeed
-        bc = self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, nextNonEatableGhost)
-        dc = self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
+        #bc = self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, nextNonEatableGhost)
+        #dc = self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction, intersections)
+        bc = self.abstractBroadResult(nextNonEatableGhost, nearestIntersection)
+        dc = self.abstractBroadResult(pacmanSpositionAfterMoving, nearestIntersection)
         dcXv = float(dc * v)
         aADD = float(a + dcXv)
         bcSUB = float(aADD - bc)
         result = float(bcSUB/a)
+        #print str(result) + " " + str(direction)
         return result
 
     def getNextEatableGhost(self, state, pacmanSpositionAfterMoving):
@@ -386,20 +389,25 @@ class RuleGenerator():
                 intersectionX, intersectionY = intersection
                 pacmanPositionX, pacmanPositionY = pacmanPosition
                 if direction == Directions.EAST:
-                    if pacmanPositionX < intersectionX:
+                    if pacmanPositionX < intersectionX and pacmanPositionY == intersectionY:
+                       #print(str(direction) + "pacman: " + str(pacmanPosition) + "intersection: " + str(intersection))
                        saveIntersectionsCountInDir+=1
                 if direction == Directions.WEST:
-                    if pacmanPositionX > intersectionX:
+                    if pacmanPositionX > intersectionX and pacmanPositionY == intersectionY:
+                       #print(str(direction) + "pacman: " + str(pacmanPosition) + "intersection: " + str(intersection))
                        saveIntersectionsCountInDir+=1
                 if direction == Directions.NORTH:
-                    if pacmanPositionY < intersectionY:
+                    if pacmanPositionY < intersectionY and pacmanPositionX == intersectionX:
+                       #print(str(direction) + "pacman: " + str(pacmanPosition) + "intersection: " + str(intersection))
                        saveIntersectionsCountInDir+=1     
                 if direction == Directions.SOUTH:
-                    if pacmanPositionY > intersectionY:
+                    if pacmanPositionY > intersectionY and pacmanPositionX == intersectionX:
+                       #print(str(direction) + "pacman: " + str(pacmanPosition) + "intersection: " + str(intersection))
                        saveIntersectionsCountInDir+=1 
                                 
         if saveIntersectionsCount == 0:
-            return 0          
+            return 0
+        #print(str(saveIntersectionsCountInDir) + " " + direction)
         return (saveIntersectionsCount - saveIntersectionsCountInDir)/saveIntersectionsCount
                        
     
@@ -416,39 +424,39 @@ class RuleGenerator():
             if direction == Directions.EAST:
                 if intersectionX <= startX and intersectionY != startY:
                        continue
-                if direction == Directions.WEST:
-                   if intersectionX >= startX and intersectionY != startY:
-                       continue
-                if direction == Directions.NORTH:
-                   if intersectionY <= startY and intersectionX != startX:
-                       continue
-                if direction == Directions.SOUTH:
-                   if intersectionY >= startY and intersectionX != startX:
-                       continue
-            #    print "getNearestIntersectionInDirection: " + str(startposition) + " | " + str(intersection)   
-                distance = self.abstractBroadResult(startposition, intersection)
-                intersectionX, intersectionY = intersection
-                startX, startY = startposition
-                if direction == Directions.EAST:
-                    if intersectionX >= startX and intersectionY == startY:
-                       if distance < MinDistance:
-                           result = intersection 
-                           minDistance = distance
-                if direction == Directions.WEST:
-                   if intersectionX <= startX and intersectionY == startY:
-                       if distance < MinDistance:
-                           result = intersection
-                           minDistance = distance
-                if direction == Directions.NORTH:
-                   if intersectionY >= startY and intersectionX == startX:
-                       if distance < MinDistance:
-                           result = intersection
-                           minDistance = distance
-                if direction == Directions.SOUTH:
-                   if intersectionY <= startY and intersectionX == startX:
-                       if distance < MinDistance:
-                           result = intersection
-                           minDistance = distance
+            if direction == Directions.WEST:
+               if intersectionX >= startX and intersectionY != startY:
+                   continue
+            if direction == Directions.NORTH:
+               if intersectionY <= startY and intersectionX != startX:
+                   continue
+            if direction == Directions.SOUTH:
+               if intersectionY >= startY and intersectionX != startX:
+                   continue
+        #    print "getNearestIntersectionInDirection: " + str(startposition) + " | " + str(intersection)   
+            distance = self.abstractBroadResult(startposition, intersection)
+            intersectionX, intersectionY = intersection
+            startX, startY = startposition
+            if direction == Directions.EAST:
+                if intersectionX >= startX and intersectionY == startY:
+                   if distance < MinDistance:
+                       result = intersection 
+                       minDistance = distance
+            if direction == Directions.WEST:
+               if intersectionX <= startX and intersectionY == startY:
+                   if distance < MinDistance:
+                       result = intersection
+                       minDistance = distance
+            if direction == Directions.NORTH:
+               if intersectionY >= startY and intersectionX == startX:
+                   if distance < MinDistance:
+                       result = intersection
+                       minDistance = distance
+            if direction == Directions.SOUTH:
+               if intersectionY <= startY and intersectionX == startX:
+                   if distance < MinDistance:
+                       result = intersection
+                       minDistance = distance
         return result;
         
     def getStateSearch(self, state, direction, intersections = None, ghostSpeed = 0.8):
@@ -743,12 +751,16 @@ class NeuralAgent(game.Agent):
         self.features = self.ruleGenerator.getfeatures(state, direction, self.intersections, self.ghostSpeed, self.lastAction, self.startFood)
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
-        #actionFeature = self.features['action']
-        #entrapment = self.features["entrapment"]
-        #eatableGhost = self.features['eatableGhosts']
+        actionFeature = self.features['action']
+        entrapment = self.features["entrapment"]
+        eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
-        #levelProgress = self.features['levelProgress']
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, ghost)
+        levelProgress = self.features['levelProgress']
+        #print("Ghost: " + str(direction) + " " + str(ghost))
+        print("Pill: " + str(direction) + " " + str(shortestPillDistance))
+        #print("Progress: " + str(direction) + " " + str(levelProgress))
+        #print(str(direction) + " " + str(entrapment))
+        action = self.network.calculateAction(shortestPillDistance, ghost, levelProgress)
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature, entrapment)
         return action
 
@@ -764,7 +776,7 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        ds.addSample((shortestPillDistance,shortestGhostDistance, ghost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        ds.addSample((shortestPillDistance, ghost, levelProgress), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         
     def calcReward(self, state):
@@ -788,7 +800,8 @@ class NeuralAgent(game.Agent):
         logging.debug(str(directions))
         rnd = self.random.random()
         if self.epsilon > rnd:
-            return self.random.choice(directions)
+            if self.isInTraining():
+                return self.random.choice(directions)
         else:
             return self.getBestDirection(self.lastState, directions)
 
@@ -797,7 +810,7 @@ class NeuralAgent(game.Agent):
         self.safeListRemove(directions, Directions.LEFT)
         self.safeListRemove(directions, Directions.REVERSE)
         self.safeListRemove(directions, Directions.RIGHT)
-        #self.safeListRemove(directions, Directions.STOP)
+        self.safeListRemove(directions, Directions.STOP)
         return directions
 
     def getBestDirection(self, state, directions):
@@ -822,6 +835,7 @@ class NeuralAgent(game.Agent):
 
     def observationFunction(self, state, intersections):
         self.intersections = intersections
+        print self.intersections
         if self.lastState:
             self.updater(state)
         else:
@@ -842,6 +856,7 @@ class NeuralAgent(game.Agent):
         if self.isInTraining():
             self.episodesSoFar += 1
             logging.info("Training " + str(self.episodesSoFar) + " of " + str (self.numTraining))
+            print("Training " + str(self.episodesSoFar) + " of " + str (self.numTraining))
         else:
             self.epsilon = 0.0
             self.alpha = 0.0
