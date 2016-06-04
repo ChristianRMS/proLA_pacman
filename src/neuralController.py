@@ -7,6 +7,7 @@ from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
 from pybrain.tools.shortcuts import buildNetwork
 import pickle
+import numpy
 
 class NeuralController:
        
@@ -15,7 +16,7 @@ class NeuralController:
         self.net = FeedForwardNetwork()
         
         self.inLayer = LinearLayer(3)
-        self.hiddenLayer = SigmoidLayer(25)
+        self.hiddenLayer = SigmoidLayer(10)
         self.outLayer = LinearLayer(1)
         
         self.net.addInputModule(self.inLayer)
@@ -32,6 +33,9 @@ class NeuralController:
         
         self.trainer = BackpropTrainer(self.net)
         self.data = []
+        
+        new_params = numpy.array([1.0]*len(self.net.params))
+        self.net._setParameters(new_params)
         
         
     
@@ -57,8 +61,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, entrapment, shortestPillDistance, actionFeature):
-        result = self.net.activate([entrapment, shortestPillDistance, actionFeature])
+    def calculateAction(self, Feature1, Feature2, Feature3):
+        result = self.net.activate([Feature1, Feature2, Feature3])
         return result[0]
     
     def printNetwork(self):
@@ -72,11 +76,13 @@ class NeuralController:
         return self.trainer
     
     def save(self):
-        fileObject = open('netSave', 'w')
+        fileObject = open('netSave.p', 'wb')
         pickle.dump(self.net, fileObject)
         fileObject.close()
+        
     
     def load(self):
-        fileObject = open('netSave', 'r')
+        fileObject = open('netSave.p', 'rb')
         self.net = pickle.load(fileObject)
-        fileObject.close()
+        print("test")
+        #fileObject.close()
