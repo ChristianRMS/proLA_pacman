@@ -6,18 +6,21 @@ from pybrain.structure.modules.linearlayer import LinearLayer
 from pybrain.structure.modules.sigmoidlayer import SigmoidLayer
 from pybrain.structure.connections.full import FullConnection
 from pybrain.tools.shortcuts import buildNetwork
+from sys import argv
 import pickle
 
 class NeuralController:
        
     #--Konstruktor--
     def __init__(self):
-        self.net = FeedForwardNetwork()
-        
-        self.inLayer = LinearLayer(3)
-        self.hiddenLayer = SigmoidLayer(25)
-        self.outLayer = LinearLayer(1)
-        
+        self.net = FeedForwardNetwork() 
+        self.inCount = 2
+        self.midCount = 20
+        self.outCount = 1      
+           
+        self.inLayer = LinearLayer(self.inCount)
+        self.hiddenLayer = SigmoidLayer(self.midCount)
+        self.outLayer = LinearLayer(self.outCount)       
         self.net.addInputModule(self.inLayer)
         self.net.addModule(self.hiddenLayer)
         self.net.addOutputModule(self.outLayer)
@@ -27,7 +30,6 @@ class NeuralController:
         
         self.net.addConnection(self.in_to_hidden)
         self.net.addConnection(self.hidden_to_out)
-        
         self.net.sortModules()
         
         self.trainer = BackpropTrainer(self.net)
@@ -57,8 +59,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, entrapment, shortestPillDistance, actionFeature):
-        result = self.net.activate([entrapment, shortestPillDistance, actionFeature])
+    def calculateAction(self, shortestGhostDistance, shortestPillDistance):
+        result = self.net.activate([shortestGhostDistance, shortestPillDistance])
         return result[0]
     
     def printNetwork(self):
@@ -67,6 +69,22 @@ class NeuralController:
         print self.in_to_hidden.params
         print "Hidden to Output Connections:"
         print self.hidden_to_out.params
+        
+    def logNetwork(self, shortestGhostDistance, shortestPillDistance,reward):
+        self.file = open('networkLog.txt','w')
+        self.file.flush()
+        #self.file.write("YoYoYo!RapperimHaus")
+        self.file.write(str(2) + "\n")
+        self.file.write(str(shortestGhostDistance) + "\n")
+        self.file.write(str(shortestPillDistance) + "\n")
+        self.file.write(str(reward) + "\n")
+        self.file.write(str(self.inCount) + "\n")
+        self.file.write(str(self.midCount) + "\n")
+        self.file.write(str(self.outCount) + "\n")  
+        #self.file.write("YoYoYo!RapperimHaus")
+        self.file.write(str(self.in_to_hidden.params) + "\n")
+        self.file.write(str(self.hidden_to_out.params)+ "\n")
+        self.file.close()
     
     def getTrainer(self):
         return self.trainer

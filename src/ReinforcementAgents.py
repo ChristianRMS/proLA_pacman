@@ -555,7 +555,7 @@ class RuleGenerator():
         if stateSearch['nearestFoodDist'] is not None:
             features['foodValuability'] = (float(float((maxDistance - stateSearch['nearestFoodDist'])) / maxDistance)) #/ maxDistance
         if stateSearch['nearestGhostDistances'] is not None:
-            features['ghostThreat'] = (float(stateSearch['nearestGhostDistances'])) #/ maxDistance
+            features['ghostThreat'] = (float(float((maxDistance - stateSearch['nearestGhostDistances'])) / maxDistance)) #/ maxDistance
         if stateSearch['ghostFeature'] is not None:
             features['ghostFeature'] = (float(stateSearch['ghostFeature'])) #/ maxDistance
 #        else:
@@ -744,11 +744,11 @@ class NeuralAgent(game.Agent):
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
         #actionFeature = self.features['action']
-        #entrapment = self.features["entrapment"]
+        entrapment = self.features["entrapment"]
         #eatableGhost = self.features['eatableGhosts']
-        ghost = self.features['ghostFeature']
-        #levelProgress = self.features['levelProgress']
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, ghost)
+        #ghost = self.features['ghostFeature']
+        levelProgress = self.features['levelProgress']
+        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature, entrapment)
         return action
 
@@ -756,7 +756,7 @@ class NeuralAgent(game.Agent):
         reward = self.calcReward(nextState)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        ds = SupervisedDataSet(3,1)
+        ds = SupervisedDataSet(2,1)
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
         actionFeature = self.features['action']
@@ -764,7 +764,8 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        ds.addSample((shortestPillDistance,shortestGhostDistance, ghost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        self.network.logNetwork(shortestGhostDistance, shortestPillDistance,reward)
+        ds.addSample((shortestGhostDistance, shortestPillDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         
     def calcReward(self, state):
