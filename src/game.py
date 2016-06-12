@@ -638,7 +638,7 @@ class Game:
                         self.unmute()
                         return
                 else:
-                    observation = agent.observationFunction(self.state.deepCopy(), self.intersections)
+                    observation = agent.observationFunction(self.state.deepCopy())
                 self.unmute()
             else:
                 observation = self.state.deepCopy()

@@ -15,7 +15,7 @@ class NeuralController:
     #--Konstruktor--
     def __init__(self):
         self.net = FeedForwardNetwork() 
-        self.inCount = 2
+        self.inCount = 3
         self.midCount = 20
         self.outCount = 1      
            
@@ -36,7 +36,7 @@ class NeuralController:
         self.trainer = BackpropTrainer(self.net)
         self.data = []
         
-        new_params = numpy.array([1.0]*len(self.net.params))
+        new_params = numpy.array([1.0]*len(self.net.params)) #Setzt alle Gewichte auf 1
         self.net._setParameters(new_params)
         
         
@@ -63,8 +63,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, shortestGhostDistance, shortestPillDistance):
-        result = self.net.activate([shortestGhostDistance, shortestPillDistance])
+    def calculateAction(self, feature1, feature2, feature3):
+        result = self.net.activate([feature1, feature2, feature3])
         return result[0]
     
     def printNetwork(self):
@@ -74,13 +74,15 @@ class NeuralController:
         print "Hidden to Output Connections:"
         print self.hidden_to_out.params
         
-    def logNetwork(self, shortestGhostDistance, shortestPillDistance,reward):
+    def logNetwork(self, feature1, feature2, feature3, reward):
         self.file = open('networkLog.txt','w')
         self.file.flush()
         #self.file.write("YoYoYo!RapperimHaus")
         self.file.write(str(2) + "\n")
-        self.file.write(str(shortestGhostDistance) + "\n")
-        self.file.write(str(shortestPillDistance) + "\n")
+        self.file.write(str(feature1) + "\n")
+        self.file.write(str(feature2) + "\n")
+        self.file.write(str(feature3) + "\n")
+        #self.file.write(str(feature4) + "\n")
         self.file.write(str(reward) + "\n")
         self.file.write(str(self.inCount) + "\n")
         self.file.write(str(self.midCount) + "\n")
