@@ -36,7 +36,7 @@ class NeuralController:
         self.trainer = BackpropTrainer(self.net)
         self.data = []
         
-        new_params = numpy.array([1.0]*len(self.net.params))
+        new_params = numpy.array([1.0]*len(self.net.params)) #Setzt alle Gewichte auf 1
         self.net._setParameters(new_params)
         
         
@@ -63,6 +63,7 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
+
     def calculateAction(self, shortestPillDistance, GhostFeature, EatableGhost):
         result = self.net.activate([shortestPillDistance, GhostFeature,EatableGhost])
         return result[0]

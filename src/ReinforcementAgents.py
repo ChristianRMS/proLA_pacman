@@ -14,6 +14,7 @@ import os.path
 from bokeh.core.enums import Direction
 from bokeh.util.logconfig import level
 import time
+from sqlalchemy.sql.expression import intersect
 
 class AbstractQState():
     def __init__(self, state, direction):
@@ -198,6 +199,18 @@ class RuleGenerator():
             return (-1,0)
         else:
             return (0,0)
+    
+    def coodinateToDirection(self, coordinate):
+        if coordinate == (0,1):
+            return Directions.NORTH
+        elif coordinate == (0,-1):
+            return Directions.SOUTH
+        elif coordinate == (1,0):
+            return Directions.EAST
+        elif coordinate == (-1,0):
+            return Directions.WEST
+        else:
+            return None
     def getMovableDirections(self,posX,posY, walls):
         lst = [(0,0)]
         try:
@@ -221,6 +234,34 @@ class RuleGenerator():
         try:
             if not walls[posX+1][posY]:
                 lst.append((posX+1, posY))
+        except IndexError:
+            pass
+
+        return lst
+    
+    def getMovableDirectionList(self,posX,posY, walls):
+        lst = []
+        try:
+            if not walls[posX][posY+1]:
+                lst.append(Directions.NORTH)
+        except IndexError:
+            pass
+
+        try:
+            if not walls[posX][posY-1]:
+                lst.append(Directions.SOUTH)
+        except IndexError:
+            pass
+
+        try:
+            if not walls[posX-1][posY]:
+                lst.append(Directions.WEST)
+        except IndexError:
+            pass
+
+        try:
+            if not walls[posX+1][posY]:
+                lst.append(Directions.EAST)
         except IndexError:
             pass
 
@@ -319,21 +360,21 @@ class RuleGenerator():
         
         if nearestIntersection == None or nextNonEatableGhost == None:
             return None
-    
+        distancePacmanToGhost = float(self.abstractBroadResult(pacmanSpositionAfterMoving, nextNonEatableGhost))
         
-        a = float(maximumPathLength)
-        v = float(ghostSpeed)
+        maximumPathLength = float(maximumPathLength)
+        ghostSpeed = float(ghostSpeed)
         distanceBetweenPacmanAndGhost = self.abstractBroadResult(pacmanSpositionAfterMoving, nextNonEatableGhost)
-        #bc = float(self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, nextNonEatableGhost))
-        #dc = float(self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction))
-        bc = float(self.abstractBroadResult(nearestIntersection, nextNonEatableGhost))
-        dc = float(self.abstractBroadResult(nearestIntersection, pacmanSpositionAfterMoving))
-        if nextNonEatableGhost <= dc:
-            bc = 0
-        dcXv = float(dc * v)
-        aADD = float(dcXv + a)
-        bcSUB = float(aADD - bc)
-        result = float(bcSUB/a)
+        #distanceGhostToIntersection = float(self.getDistanceBetweenGhostAndIntersection(state, nearestIntersection, nextNonEatableGhost))
+        #distancePacmanToIntersection = float(self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction))
+        distanceGhostToIntersection = float(self.abstractBroadResult(nearestIntersection, nextNonEatableGhost))
+        distancePacmanToIntersection = float(self.abstractBroadResult(nearestIntersection, pacmanSpositionAfterMoving))
+        if distanceBetweenPacmanAndGhost <= distancePacmanToIntersection:
+            distanceGhostToIntersection = 0
+        PacmanDistanceMultipliedByGhostspeed = float(distancePacmanToIntersection * ghostSpeed)
+        addedMaxPathLenght = float(PacmanDistanceMultipliedByGhostspeed + maximumPathLength)
+        substractedGhostDistance = float(addedMaxPathLenght - distanceGhostToIntersection)
+        result = float(substractedGhostDistance/maximumPathLength)
         return result
 
     def getNextEatableGhost(self, state, pacmanSpositionAfterMoving):
@@ -395,15 +436,153 @@ class RuleGenerator():
         if(self.currentPowerPillDuration > 0):
             return (self.powerPillDuration-self.currentPowerPillDuration)/self.powerPillDuration
         return 0
-     
+    
+    def reverseDirection(self, direction):
+        reverse = None
+        if direction == Directions.NORTH:
+            reverse = Directions.SOUTH
+        if direction == Directions.SOUTH:
+            reverse = Directions.NORTH
+        if direction == Directions.EAST:
+            reverse = Directions.WEST 
+        if direction == Directions.WEST:
+            reverse = Directions.EAST
+        return reverse    
+    
+    def numberOfSafeRoutes(self, state, startPoint, startLength, ghosts):
+        routeCount = 0
+        intersectionMap = dict()
+        routeStack = []
+        
+        curX, curY = startPoint
+#         tempList = []
+#         for (sucX, sucY) in self.getMovableDirectionList(curX, curY,state.getWalls()):
+#                     sucX = sucX - curX
+#                     sucY = curY
+#                     tempList.append((sucX, sucY))
+#         openList = []
+#         for coordinate in tempList:
+#             dir = self.coodinateToDirection(coordinate)
+#             if dir != None:
+#                 openList.append(dir)
+        
+        openList = self.getMovableDirectionList(curX, curY,state.getWalls())
+        intersectionMap[startPoint] = openList
+        routeStack.append(startPoint)
+        routeLength = startLength
+        
+        lastIntersection = startPoint
+        
+        traversedList = []
+        while(len(intersectionMap) > 0):
+            possibleDirections = intersectionMap.get(lastIntersection)
+            
+            if possibleDirections != None and len(possibleDirections) > 0:
+                nextDirection = possibleDirections.pop()
+                nextIntersection = self.getNearestIntersectionInDirection(state, lastIntersection, nextDirection)
+                
+                nearestGhostDistance = float('inf')
+                for ghost in ghosts:
+                    ghostDistance = self.abstractBroadResult(ghost, nextIntersection)
+                    if ghostDistance < nearestGhostDistance:
+                        nearestGhostDistance = ghostDistance
+                if nearestGhostDistance > routeLength:
+                    curX, curY = nextIntersection
+#                     tempList = []
+#                     for (sucX, sucY) in self.getMovableDirectionList(curX, curY,state.getWalls()):
+#                         sucX = sucX - curX
+#                         sucY = curY
+#                         tempList.append((sucX, sucY))
+#                     openList = []
+#                     for coordinate in tempList:
+#                         newDirection = self.coodinateToDirection(coordinate)
+#                         if newDirection != self.reverseDirection(nextDirection):
+#                             openList.append(newDirection)
+                    
+                    openList = self.getMovableDirectionList(curX, curY,state.getWalls())
+                    reversDir = self.reverseDirection(nextDirection)
+                    if reversDir in openList:
+                        openList.remove(reversDir)
+                    if(not intersectionMap.has_key(nextIntersection) and not nextIntersection in traversedList):
+                        routeLength += self.abstractBroadResult(lastIntersection, nextIntersection)
+                        intersectionMap[nextIntersection] = openList
+                        routeStack.append(nextIntersection)
+                        traversedList.append(nextIntersection)
+                        routeCount+=1
+                        lastIntersection = nextIntersection
+                    
+                    else:
+                        if len(routeStack) > 0:
+                            lastIntersection = routeStack.pop()
+                    
+                    
+                else:
+                    #routeLength -= self.abstractBroadResult(lastIntersection, nextIntersection)
+                    if len(routeStack) > 0:
+                        lastIntersection = routeStack.pop()
+                        #routeCount-=1
+            else:
+                traversedList.append(lastIntersection)
+                if intersectionMap.has_key(lastIntersection):
+                    intersectionMap.pop(lastIntersection)
+                if len(routeStack) > 0:
+                    lastIntersection = routeStack.pop()
+                #else:
+        return routeCount
+#                 if len(routeStack) > 0:
+#                         lastIntersection = routeStack.pop()
+#                         routeCount+=1        
+                
+    
+    #Idee:   Erstelle eine Liste mit allen sicheren Intersections
+    #        Suche die naechste Intersection in der Richtung in der Pacman sich bewegt
+    #        Vergleiche wieviele Intersection aus der Liste mit den sicheren Intersections noch vor dem geist erreicht werden koennen (sind die sicheren Routen)
+    
     def entrapmentFeature(self, nonEatableGhosts, state, pacmanPosition, direction): 
        # numberOfSafeJunctions = self.getNumberOfSafeIntersections(nonEatableGhosts, state, pacmanPosition, wayPoints)
        # numberOfSafeJunctionsInDirection = self.getNumberOfSafeIntersectionsInDircetion(nonEatableGhosts, state, pacmanPosition, wayPoints, direction)  
+        nextIntersectionInDirection = self.getNearestIntersectionInDirection(state, pacmanPosition, direction)
+        if nextIntersectionInDirection == None:
+            return 0
         ghosts = nonEatableGhosts
+        #print pacmanPosition
         saveIntersectionsCountInDir = 0
         saveIntersectionsCount = 0    
         #if intersections == None:
         #    return None 
+        saveIntersections = []
+
+#         intersectionMap = dict()
+#         routeStack = []
+#          
+#         curX, curY = pacmanPosition
+# #         tempList = []
+# #         for (sucX, sucY) in self.getMovableDirections(curX, curY,state.getWalls()):
+# #             sucX = sucX - curX
+# #             sucY = curY
+# #             tempList.append((sucX, sucY))
+# #         openList = []
+# #         for coordinate in tempList:
+# #             dir = self.coodinateToDirection(coordinate)
+# #             if dir != None:
+# #                 openList.append(dir)
+#          
+#         openList = self.getMovableDirectionList(curX, curY,state.getWalls())
+#         intersectionMap[pacmanPosition] = openList
+#         routeStack.append(pacmanPosition)
+#         routeLength = 0
+#          
+#         lastIntersection = pacmanPosition
+#          
+#         for nextDirection in openList:
+#             intersection = self.getNearestIntersectionInDirection(state, pacmanPosition, direction)
+#             routeLength = self.abstractBroadResult(intersection, pacmanPosition)
+#             additionalRoutes = self.numberOfSafeRoutes(state, intersection, routeLength, ghosts)
+#             if additionalRoutes != None:
+#                 saveIntersectionsCount += additionalRoutes
+#                 if nextDirection == direction:
+#                     saveIntersectionsCountInDir += additionalRoutes
+            
         for intersection in self.intersections:
            # print "entrapmentFeature: " + str(pacmanPosition) + " | " + str(intersection)
             distanceToPacman = self.abstractBroadResult(pacmanPosition, intersection)
@@ -414,7 +593,20 @@ class RuleGenerator():
                 if ghostDistance < nearestGhostDistance:
                     nearestGhostDistance = ghostDistance
             if distanceToPacman < nearestGhostDistance:
-                saveIntersectionsCount+=1  
+                saveIntersectionsCount+=1
+                saveIntersections.append(intersection)  
+          
+        for intersection in saveIntersections:
+            if intersection == nextIntersectionInDirection:
+                continue
+            pacmanDistance = self.abstractBroadResult(nextIntersectionInDirection, intersection) + self.abstractBroadResult(pacmanPosition, nextIntersectionInDirection)
+            nearestGhostDistance = float('inf')
+            for ghost in ghosts:
+            #    print "entrapmentFeature | GhostDis : " + str(ghost) + " | " + str(intersection)
+                ghostDistance = self.abstractBroadResult(ghost, intersection)
+                if ghostDistance < nearestGhostDistance:
+                    nearestGhostDistance = ghostDistance
+            if(pacmanDistance < nearestGhostDistance):
                 intersectionX, intersectionY = intersection
                 pacmanPositionX, pacmanPositionY = pacmanPosition
                 if direction == Directions.EAST:
@@ -429,13 +621,14 @@ class RuleGenerator():
                 if direction == Directions.SOUTH:
                     if pacmanPositionY > intersectionY:
                        saveIntersectionsCountInDir+=1 
-                                
-        if saveIntersectionsCount == 0:
-            return 0   
-        #print("intersections: " + str(saveIntersectionsCount))
-        #print("intersectionInDirection" + str(saveIntersectionsCountInDir))       
-        return float(float((saveIntersectionsCount - saveIntersectionsCountInDir))/saveIntersectionsCount)
+                    
+        #print(str(direction) + " intersection " + str(nextIntersectionInDirection))         
         
+        #print("intersections: " + str(saveIntersectionsCount))
+        #print("intersectionInDirection" + str(saveIntersectionsCountInDir))     
+        if saveIntersectionsCount == 0:
+            return 0     
+        return float(float((saveIntersectionsCount - saveIntersectionsCountInDir))/saveIntersectionsCount)
     
     def getNearestIntersectionInDirection(self, state, startposition, direction):
         result = None
@@ -444,42 +637,46 @@ class RuleGenerator():
         for intersection in self.intersections: 
             intersectionX, intersectionY = intersection
             startX, startY = startposition
-            if direction == Directions.EAST:
-                if intersectionX <= startX and intersectionY != startY:
-                       continue
-            if direction == Directions.WEST:
-               if intersectionX >= startX and intersectionY != startY:
-                   continue
-            if direction == Directions.NORTH:
-               if intersectionY <= startY and intersectionX != startX:
-                   continue
-            if direction == Directions.SOUTH:
-               if intersectionY >= startY and intersectionX != startX:
-                   continue
-        #    print "getNearestIntersectionInDirection: " + str(startposition) + " | " + str(intersection)   
-            distance = self.abstractBroadResult(startposition, intersection)
-            intersectionX, intersectionY = intersection
-            startX, startY = startposition
-            if direction == Directions.EAST:
-                if intersectionX >= startX and intersectionY == startY:
-                   if distance < MinDistance:
-                       result = intersection 
-                       minDistance = distance
-            if direction == Directions.WEST:
-               if intersectionX <= startX and intersectionY == startY:
-                   if distance < MinDistance:
-                       result = intersection
-                       minDistance = distance
-            if direction == Directions.NORTH:
-               if intersectionY >= startY and intersectionX == startX:
-                   if distance < MinDistance:
-                       result = intersection
-                       minDistance = distance
-            if direction == Directions.SOUTH:
-               if intersectionY <= startY and intersectionX == startX:
-                   if distance < MinDistance:
-                       result = intersection
-                       minDistance = distance
+#             if direction == Directions.EAST:
+#                 if intersectionX <= startX:# or intersectionY != startY:
+#                     continue
+#             if direction == Directions.WEST:
+#                if intersectionX >= startX:# or intersectionY != startY:
+#                     continue
+#             if direction == Directions.NORTH:
+#                if intersectionY <= startY:# or intersectionX != startX:
+#                     continue
+#             if direction == Directions.SOUTH:
+#                if intersectionY >= startY:# or intersectionX != startX:
+#                     continue
+                
+            if (direction == Directions.EAST and intersectionX > startX) or (direction == Directions.WEST and intersectionX < startX) or (direction == Directions.SOUTH and intersectionY < startY) or (direction == Directions.NORTH and intersectionY > startY):
+                distance = self.abstractBroadResult(startposition, intersection)
+                if distance < MinDistance:
+                    MinDistance = distance
+                    result = intersection
+            #intersectionX, intersectionY = intersection
+            #startX, startY = startposition
+            #if direction == Directions.EAST:
+            #    if intersectionX >= startX and intersectionY == startY:
+            #       if distance < MinDistance:
+            #           result = intersection 
+            #           minDistance = distance
+            #if direction == Directions.WEST:
+            #   if intersectionX <= startX and intersectionY == startY:
+            #       if distance < MinDistance:
+            #           result = intersection
+            #           minDistance = distance
+            #if direction == Directions.NORTH:
+            #   if intersectionY >= startY and intersectionX == startX:
+            #       if distance < MinDistance:
+            #           result = intersection
+            #           minDistance = distance
+            #if direction == Directions.SOUTH:
+            #   if intersectionY <= startY and intersectionX == startX:
+            #       if distance < MinDistance:
+            #           result = intersection
+            #           minDistance = distance
         return result;
         
     def getStateSearch(self, state, direction, ghostSpeed = 0.8):
@@ -787,9 +984,10 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        action = self.network.calculateAction(shortestPillDistance,ghost,eatableGhost)
+        #print (str(direction) + " " + str(entrapment))
+        action = self.network.calculateAction(ghost, shortestPillDistance, eatableGhost)
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature, entrapment)
-        #print(str(direction) + " " + str(shortestGhostDistance))
+        print(str(direction) + " " + str(ghost))
         #print(str(direction) + " " + str(shortestPillDistance))
         #print(str(direction) + " entrapment: " + str(entrapment))
         #print(str(direction) + " ghost" + str(ghost))
@@ -808,8 +1006,8 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        self.network.logNetwork(shortestPillDistance, ghost,eatableGhost,reward)
-        ds.addSample((shortestPillDistance, ghost,eatableGhost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        self.network.logNetwork(ghost, shortestPillDistance, eatableGhost,reward)
+        ds.addSample((ghost, shortestPillDistance, eatableGhost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         
     def calcReward(self, state):
@@ -866,8 +1064,8 @@ class NeuralAgent(game.Agent):
         else:
             return 0.0
 
-    def observationFunction(self, state, intersections):
-        self.wayPoints = intersections
+    def observationFunction(self, state):
+        #self.wayPoints = intersections
         if self.lastState:
             self.updater(state)
         else:
