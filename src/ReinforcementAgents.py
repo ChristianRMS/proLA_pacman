@@ -360,8 +360,7 @@ class RuleGenerator():
         
         if nearestIntersection == None or nextNonEatableGhost == None:
             return None
-        distancePacmanToGhost = float(self.abstractBroadResult(pacmanSpositionAfterMoving, nextNonEatableGhost))
-        
+           
         maximumPathLength = float(maximumPathLength)
         ghostSpeed = float(ghostSpeed)
         distanceBetweenPacmanAndGhost = self.abstractBroadResult(pacmanSpositionAfterMoving, nextNonEatableGhost)
@@ -369,12 +368,13 @@ class RuleGenerator():
         #distancePacmanToIntersection = float(self.distanceToNearestIntersectionInDirection(state, pacmanSpositionAfterMoving, direction))
         distanceGhostToIntersection = float(self.abstractBroadResult(nearestIntersection, nextNonEatableGhost))
         distancePacmanToIntersection = float(self.abstractBroadResult(nearestIntersection, pacmanSpositionAfterMoving))
-        if distanceBetweenPacmanAndGhost <= distancePacmanToIntersection:
+        if nextNonEatableGhost <= distancePacmanToIntersection:
             distanceGhostToIntersection = 0
         PacmanDistanceMultipliedByGhostspeed = float(distancePacmanToIntersection * ghostSpeed)
         addedMaxPathLenght = float(PacmanDistanceMultipliedByGhostspeed + maximumPathLength)
         substractedGhostDistance = float(addedMaxPathLenght - distanceGhostToIntersection)
         result = float(substractedGhostDistance/maximumPathLength)
+        #print str(direction) + " | Result: " + str(result) 
         return result
 
     def getNextEatableGhost(self, state, pacmanSpositionAfterMoving):
@@ -985,20 +985,18 @@ class NeuralAgent(game.Agent):
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
         #print (str(direction) + " " + str(entrapment))
-        action = self.network.calculateAction(ghost, shortestPillDistance, eatableGhost)
+        action = self.network.calculateAction(shortestGhostDistance, shortestPillDistance)
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature, entrapment)
-        print(str(direction) + " " + str(ghost))
         #print(str(direction) + " " + str(shortestPillDistance))
         #print(str(direction) + " entrapment: " + str(entrapment))
         #print(str(direction) + " ghost" + str(ghost))
-        
         return action
 
     def updater(self,nextState):
         reward = self.calcReward(nextState)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        ds = SupervisedDataSet(3,1)
+        ds = SupervisedDataSet(2,1)
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
         actionFeature = self.features['action']
@@ -1006,8 +1004,8 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        self.network.logNetwork(ghost, shortestPillDistance, eatableGhost,reward)
-        ds.addSample((ghost, shortestPillDistance, eatableGhost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        self.network.logNetwork(shortestGhostDistance, shortestPillDistance, eatableGhost,reward)
+        ds.addSample((shortestGhostDistance, shortestPillDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         
     def calcReward(self, state):

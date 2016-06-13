@@ -15,8 +15,8 @@ class NeuralController:
     #--Konstruktor--
     def __init__(self):
         self.net = FeedForwardNetwork() 
-        self.inCount = 3
-        self.midCount = 20
+        self.inCount = 2
+        self.midCount = 30
         self.outCount = 1      
            
         self.inLayer = LinearLayer(self.inCount)
@@ -64,8 +64,8 @@ class NeuralController:
         return currentDirction
     
 
-    def calculateAction(self, shortestPillDistance, GhostFeature, EatableGhost):
-        result = self.net.activate([shortestPillDistance, GhostFeature,EatableGhost])
+    def calculateAction(self, shortestPillDistance, GhostFeature):
+        result = self.net.activate([shortestPillDistance, GhostFeature])
         return result[0]
     
     def printNetwork(self):
