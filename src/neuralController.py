@@ -15,7 +15,7 @@ class NeuralController:
     #--Konstruktor--
     def __init__(self):
         self.net = FeedForwardNetwork() 
-        self.inCount = 2
+        self.inCount = 3
         self.midCount = 20
         self.outCount = 1      
            
@@ -63,8 +63,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-    def calculateAction(self, shortestGhostDistance, shortestPillDistance):
-        result = self.net.activate([shortestGhostDistance, shortestPillDistance])
+    def calculateAction(self, shortestPillDistance, GhostFeature, EatableGhost):
+        result = self.net.activate([shortestPillDistance, GhostFeature,EatableGhost])
         return result[0]
     
     def printNetwork(self):
@@ -74,13 +74,14 @@ class NeuralController:
         print "Hidden to Output Connections:"
         print self.hidden_to_out.params
         
-    def logNetwork(self, shortestGhostDistance, shortestPillDistance,reward):
+    def logNetwork(self, shortestPillDistance, GhostFeature, EatableGhost ,reward):
         self.file = open('networkLog.txt','w')
         self.file.flush()
         #self.file.write("YoYoYo!RapperimHaus")
-        self.file.write(str(2) + "\n")
-        self.file.write(str(shortestGhostDistance) + "\n")
+        self.file.write(str(3) + "\n")
         self.file.write(str(shortestPillDistance) + "\n")
+        self.file.write(str(GhostFeature) + "\n")
+        self.file.write(str(EatableGhost) + "\n")
         self.file.write(str(reward) + "\n")
         self.file.write(str(self.inCount) + "\n")
         self.file.write(str(self.midCount) + "\n")
@@ -97,7 +98,6 @@ class NeuralController:
         fileObject = open('netSave.p', 'wb')
         pickle.dump(self.net, fileObject)
         fileObject.close()
-        
     
     def load(self):
         fileObject = open('netSave.p', 'rb')

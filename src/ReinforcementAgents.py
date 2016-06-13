@@ -782,12 +782,12 @@ class NeuralAgent(game.Agent):
         self.features = self.ruleGenerator.getfeatures(state, direction, self.ghostSpeed, self.lastAction, self.startFood)
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
-        #actionFeature = self.features['action']
+        actionFeature = self.features['action']
         entrapment = self.features["entrapment"]
-        #eatableGhost = self.features['eatableGhosts']
-        #ghost = self.features['ghostFeature']
+        eatableGhost = self.features['eatableGhosts']
+        ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance)
+        action = self.network.calculateAction(shortestPillDistance,ghost,eatableGhost)
         #action = self.network.calculateAction(shortestPillDistance,shortestGhostDistance, eatableGhost, actionFeature, entrapment)
         #print(str(direction) + " " + str(shortestGhostDistance))
         #print(str(direction) + " " + str(shortestPillDistance))
@@ -800,7 +800,7 @@ class NeuralAgent(game.Agent):
         reward = self.calcReward(nextState)
         combinatedValue = self.getCombinedValue(self.lastState, self.lastAction)
         maxPossibleFutureValue = self.getBestValue(nextState, self.legaldirections(nextState))
-        ds = SupervisedDataSet(2,1)
+        ds = SupervisedDataSet(3,1)
         shortestPillDistance = self.features['foodValuability']
         shortestGhostDistance = self.features['ghostThreat']
         actionFeature = self.features['action']
@@ -808,8 +808,8 @@ class NeuralAgent(game.Agent):
         eatableGhost = self.features['eatableGhosts']
         ghost = self.features['ghostFeature']
         levelProgress = self.features['levelProgress']
-        self.network.logNetwork(shortestGhostDistance, shortestPillDistance,reward)
-        ds.addSample((shortestGhostDistance, shortestPillDistance), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
+        self.network.logNetwork(shortestPillDistance, ghost,eatableGhost,reward)
+        ds.addSample((shortestPillDistance, ghost,eatableGhost), (reward + self.gamma * maxPossibleFutureValue - combinatedValue))
         self.network.getTrainer().trainOnDataset(ds)
         
     def calcReward(self, state):
