@@ -15,8 +15,8 @@ class NeuralController:
     #--Konstruktor--
     def __init__(self):
         self.net = FeedForwardNetwork() 
-        self.inCount = 2
-        self.midCount = 30
+        self.inCount = 4
+        self.midCount = 20
         self.outCount = 1      
            
         self.inLayer = LinearLayer(self.inCount)
@@ -63,9 +63,8 @@ class NeuralController:
     def action(self, currentDirction):
         return currentDirction
     
-
-    def calculateAction(self, shortestPillDistance, GhostFeature):
-        result = self.net.activate([shortestPillDistance, GhostFeature])
+    def calculateAction(self, feature1, feature2, feature3, feature4):
+        result = self.net.activate([feature1, feature2, feature3, feature4])
         return result[0]
     
     def printNetwork(self):
@@ -75,14 +74,15 @@ class NeuralController:
         print "Hidden to Output Connections:"
         print self.hidden_to_out.params
         
-    def logNetwork(self, shortestPillDistance, GhostFeature, EatableGhost ,reward):
+    def logNetwork(self, feature1, feature2, feature3, feature4, reward):
         self.file = open('networkLog.txt','w')
         self.file.flush()
         #self.file.write("YoYoYo!RapperimHaus")
-        self.file.write(str(3) + "\n")
-        self.file.write(str(shortestPillDistance) + "\n")
-        self.file.write(str(GhostFeature) + "\n")
-        self.file.write(str(EatableGhost) + "\n")
+        self.file.write(str(2) + "\n")
+        self.file.write(str(feature1) + "\n")
+        self.file.write(str(feature2) + "\n")
+        self.file.write(str(feature3) + "\n")
+        self.file.write(str(feature4) + "\n")
         self.file.write(str(reward) + "\n")
         self.file.write(str(self.inCount) + "\n")
         self.file.write(str(self.midCount) + "\n")
@@ -99,9 +99,10 @@ class NeuralController:
         fileObject = open('netSave.p', 'wb')
         pickle.dump(self.net, fileObject)
         fileObject.close()
+        
     
     def load(self):
         fileObject = open('netSave.p', 'rb')
         self.net = pickle.load(fileObject)
         print("test")
-        #fileObject.close()
+        fileObject.close()
