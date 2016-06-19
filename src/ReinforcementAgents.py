@@ -591,7 +591,7 @@ class RuleGenerator():
             features['ghostFeature'] = float(stateSearch['ghostFeature'])
         
         if stateSearch['nearestEatableGhostDistances'] is not None:
-            features['eatableGhosts'] = (float(stateSearch['nearestEatableGhostDistances']/maxDistance))
+            features['eatableGhosts'] = (float(stateSearch['nearestEatableGhostDistances'])/maxDistance)
         if stateSearch['entrapmentFeature'] is not None:
             features["entrapment"] = float(stateSearch['entrapmentFeature'])
         if stateSearch['foodcount'] is not None:
