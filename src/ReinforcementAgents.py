@@ -427,8 +427,8 @@ class RuleGenerator():
             
             east = direction == Directions.EAST and intersectionX > startX
             west = direction == Directions.WEST and intersectionX < startX
-            south = direction == Directions.SOUTH and intersectionY < startX
-            north = direction == Directions.NORTH and intersectionY > startX
+            south = direction == Directions.SOUTH and intersectionY < startY
+            north = direction == Directions.NORTH and intersectionY > startY
                 
             if east or west or south or north:
                 distance = self.abstractBroadResult(startposition, intersection)
